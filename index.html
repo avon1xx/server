@@ -1,513 +1,1291 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nexus // Qwen Architect</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inconsolata:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/powershell.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nexus // Ollama Interface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inconsolata:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   NEXUS — Ollama Chat Interface
+   ═══════════════════════════════════════════ */
 
-  <style>
-    :root {
-      --bg:      #0e0e0f;
-      --surface: #141416;
-      --border:  #222226;
-      --text:    #e8e6e0;
-      --muted:   #6b7280;
-      --c1:      #06b6d4;
-      --err:     #ef4444;
-      --warn:    #f97316;
-    }
+:root {
+  --bg:      #0e0e0f;
+  --surface: #141416;
+  --border:  #222226;
+  --text:    #e8e6e0;
+  --muted:   #6b7280;
+  --c1:      #06b6d4;
+  --err:     #ef4444;
+  --warn:    #f97316;
+  --success: #22c55e;
+  --code-bg: #16161e;
+}
 
-    /* CUSTOM SCROLLBARS - CYBER BLUE */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { 
-      background: rgba(6, 182, 212, 0.2); 
-      border-radius: 4px;
-      border: 2px solid var(--bg);
-    }
-    ::-webkit-scrollbar-thumb:hover { background: var(--c1); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Inconsolata', monospace;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      margin: 0;
-      overflow: hidden;
-    }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c1); }
 
-    header {
-      padding: 24px 40px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(14, 14, 15, 0.8);
-      backdrop-filter: blur(10px);
-      flex-shrink: 0;
-      z-index: 10;
-    }
+html, body { height: 100%; overflow: hidden; }
 
-    .header-wrap {
-      max-width: 1000px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  display: flex;
+  flex-direction: column;
+}
 
-    .logo { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; }
-    .logo span { color: var(--c1); }
+/* ── SETTINGS MODAL ── */
+#settings-modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
 
-    .header-controls { display: flex; align-items: center; gap: 20px; }
-    
-    .model-select {
-      background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 4px;
-      padding: 6px 12px; font-family: 'Inconsolata', monospace;
-      font-size: 0.75rem; outline: none; cursor: pointer;
-    }
-    .model-select:hover { border-color: var(--c1); }
+#settings-modal.open { display: flex; }
 
-    .status-area { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-    .status-dot.active { background: var(--c1); box-shadow: 0 0 8px var(--c1); animation: pulse 1.5s infinite; }
-    .status-dot.error { background: var(--err); box-shadow: 0 0 8px var(--err); animation: none; }
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px;
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 18px;
+}
 
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+.modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 800;
+  color: var(--c1); letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 50px 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-    }
+.modal-field { display: flex; flex-direction: column; gap: 6px; }
 
-    .msg-block { max-width: 1000px; width: 100%; margin: 0 auto; animation: fadeUp 0.3s ease; }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.modal-label {
+  font-size: 0.68rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
 
-    .msg-meta { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
-    .msg-text { padding: 20px 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); line-height: 1.6; }
+.modal-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
 
-    .user .msg-text { border-left: 2px solid var(--muted); background: rgba(255,255,255,0.02); }
-    .ai .msg-text { border-left: 2px solid var(--c1); }
-    .error .msg-text { border-left: 2px solid var(--err); color: #f87171; }
+.modal-input:focus { border-color: var(--c1); }
 
-    /* IMAGE PREVIEW */
-    .img-preview {
-      margin-top: 10px;
-      max-width: 200px;
-      border-radius: 6px;
-      border: 1px solid var(--c1);
-      overflow: hidden;
-      display: none;
-    }
-    .img-preview img {
-      max-width: 100%;
-      max-height: 150px;
-      display: block;
-    }
+.modal-note {
+  font-size: 0.68rem; color: var(--muted);
+  line-height: 1.5;
+  background: rgba(6,182,212,0.05);
+  border: 1px solid rgba(6,182,212,0.15);
+  border-radius: 4px;
+  padding: 8px 10px;
+}
 
-    /* CODE RENDERING */
-    .code-container {
-      position: relative; margin: 1.5rem 0;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: #16161e; overflow: hidden;
-    }
-    .code-header {
-      display: flex; justify-content: flex-end; gap: 8px;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.02);
-    }
-    .code-btn {
-      background: transparent; border: 1px solid var(--border);
-      color: var(--muted); font-family: 'Syne', sans-serif;
-      font-size: 0.65rem; padding: 4px 10px; border-radius: 4px;
-      cursor: pointer; transition: 0.2s;
-    }
-    .code-btn:hover { color: var(--c1); border-color: var(--c1); }
+.modal-note code {
+  color: var(--c1);
+  background: rgba(6,182,212,0.1);
+  padding: 1px 4px; border-radius: 2px;
+  font-size: 0.82rem;
+}
 
-    pre { margin: 0 !important; padding: 1.5rem !important; overflow-x: auto; }
-    code { font-family: 'Inconsolata', monospace !important; }
+.modal-btn-row { display: flex; gap: 10px; }
 
-    .input-section {
-      padding: 30px 40px 40px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .input-wrap { max-width: 1000px; margin: 0 auto; }
-    .input-row { display: flex; gap: 16px; align-items: flex-end; }
-    .input-row-col { display: flex; flex-direction: column; }
+.modal-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem; font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: 0.2s;
+}
 
-    #prompt-input {
-      flex: 1; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 6px; padding: 18px; color: var(--text);
-      font-family: 'Inconsolata', monospace; font-size: 1rem;
-      resize: none; min-height: 60px; max-height: 160px; outline: none;
-      line-height: 1.5;
-    }
+.modal-btn.primary { background: var(--c1); color: #0e0e0f; border-color: var(--c1); }
+.modal-btn.primary:hover { opacity: 0.85; }
+.modal-btn.secondary { background: transparent; color: var(--muted); }
+.modal-btn.secondary:hover { border-color: var(--muted); color: var(--text); }
 
-    #run-btn {
-      background: var(--surface); color: var(--c1);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 0 30px; height: 60px; font-family: 'Syne', sans-serif;
-      font-weight: 800; cursor: pointer; transition: 0.2s;
-      text-transform: uppercase; font-size: 0.8rem;
-    }
-    #run-btn:hover:not(:disabled) { 
-      border-color: var(--c1); 
-      background: rgba(6, 182, 212, 0.05); 
-    }
-    
-    /* STAN AKTYWNY (Working) */
-    #run-btn:disabled {
-      background: #2a2a2d; /* szary */
-      color: var(--muted);
-      border-color: #3a3a3d;
-      cursor: wait;
-    }
+/* ── HEADER ── */
+header {
+  flex-shrink: 0;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(14,14,15,0.9);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
 
-    /* STAN WARNING (Hover na aktywnym) */
-    #run-btn:disabled:hover {
-      background: rgba(239, 68, 68, 0.1); /* czerwony z przezroczystością */
-      border-color: var(--err);
-      color: var(--err);
-    }
+.header-wrap {
+  max-width: 960px; margin: 0 auto;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+}
 
-    .hint { margin-top: 12px; font-size: 0.65rem; color: var(--muted); display: flex; justify-content: space-between; }
-    
-    /* IMAGE UPLOAD STYLES */
-    .upload-wrapper {
-      display: flex; gap: 12px; flex-direction: column; justify-content: flex-end;
-    }
-    .image-btn {
-      background: var(--surface); color: var(--muted);
-      border: 1px dashed var(--border); border-radius: 6px;
-      padding: 8px; font-size: 0.8rem; cursor: pointer;
-      transition: 0.2s; width: 100%; text-align: center;
-    }
-    .image-btn:hover { border-color: var(--c1); color: var(--c1); }
-    
-    #file-input { display: none; }
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem; font-weight: 800;
+  white-space: nowrap;
+}
 
-    .img-preview.active { display: block; }
+.logo span { color: var(--c1); }
 
-    /* TOOLBAR */
-    .toolbar { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-    .toolbar-btn {
-      background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 6px 12px; font-family: 'Syne', sans-serif;
-      font-size: 0.65rem; cursor: pointer; transition: 0.2s;
-    }
-    .toolbar-btn:hover:not(:disabled) { border-color: var(--c1); color: var(--c1); }
-    .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.header-right {
+  display: flex; align-items: center; gap: 14px;
+  flex-wrap: wrap;
+}
 
-  </style>
+.model-select {
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 6px 10px;
+  font-family: 'Inconsolata', monospace; font-size: 0.75rem;
+  outline: none; cursor: pointer;
+  max-width: 200px;
+  transition: border-color 0.2s;
+}
+
+.model-select:hover { border-color: var(--c1); }
+
+.status-area {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.68rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.sdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.sdot.online  { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
+.sdot.offline { background: var(--err);     box-shadow: 0 0 8px var(--err); animation: none; }
+.sdot.busy    { background: var(--c1);      box-shadow: 0 0 8px var(--c1);  animation: pulse 0.8s infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+.settings-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  width: 30px; height: 30px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.2s; flex-shrink: 0;
+}
+
+.settings-btn:hover { border-color: var(--c1); color: var(--c1); }
+
+/* ── VISION BADGE ── */
+.vision-badge {
+  display: none;
+  font-size: 0.6rem;
+  background: rgba(249,115,22,0.12);
+  border: 1px solid rgba(249,115,22,0.3);
+  color: var(--warn);
+  border-radius: 3px;
+  padding: 2px 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vision-badge.show { display: block; }
+
+/* ── CHAT AREA ── */
+#chat {
+  flex: 1; overflow-y: auto;
+  padding: 32px;
+  display: flex; flex-direction: column; gap: 28px;
+}
+
+.msg-block {
+  max-width: 960px; width: 100%;
+  margin: 0 auto;
+  animation: fadeUp 0.25s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.msg-meta {
+  font-size: 0.65rem; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+  font-weight: 700; letter-spacing: 0.1em;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.msg-text {
+  padding: 18px 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  line-height: 1.7;
+  font-size: 0.92rem;
+}
+
+/* User: plain text, no markdown styling */
+.user .msg-text {
+  border-left: 2px solid var(--muted);
+  background: rgba(255,255,255,0.02);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Inconsolata', monospace;
+  color: var(--text);
+}
+
+/* AI: full markdown */
+.ai .msg-text {
+  border-left: 2px solid var(--c1);
+}
+
+.ai .msg-text p { margin-bottom: 0.6em; }
+.ai .msg-text p:last-child { margin-bottom: 0; }
+.ai .msg-text ul, .ai .msg-text ol { padding-left: 1.2em; margin-bottom: 0.6em; }
+.ai .msg-text li { margin-bottom: 0.2em; }
+.ai .msg-text strong { color: var(--c1); font-weight: 700; }
+.ai .msg-text em { color: #a78bfa; }
+.ai .msg-text h1,.ai .msg-text h2,.ai .msg-text h3 {
+  font-family: 'Syne', sans-serif;
+  color: var(--c1); margin: 1em 0 0.4em;
+  font-size: 1rem;
+}
+
+.error .msg-text { border-left: 2px solid var(--err); color: #f87171; }
+.system .msg-text { border-left: 2px solid var(--muted); color: var(--muted); font-size: 0.82rem; }
+
+/* Image in user message */
+.msg-img {
+  margin-top: 10px;
+  max-width: 180px;
+  border-radius: 4px;
+  border: 1px solid var(--c1);
+  overflow: hidden;
+}
+.msg-img img { max-width: 100%; display: block; }
+
+/* ── CODE BLOCKS ── */
+.code-container {
+  position: relative; margin: 1em 0;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--code-bg); overflow: hidden;
+}
+
+.code-header {
+  display: flex; align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  gap: 8px;
+}
+
+.code-lang {
+  font-size: 0.62rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  flex: 1;
+}
+
+.code-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Inconsolata', monospace;
+  font-size: 0.62rem; padding: 3px 9px; border-radius: 3px;
+  cursor: pointer; transition: 0.15s; letter-spacing: 0.05em;
+}
+
+.code-btn:hover { color: var(--c1); border-color: var(--c1); }
+.code-btn.copied { color: var(--success); border-color: var(--success); }
+
+pre { margin: 0 !important; padding: 1.2em !important; overflow-x: auto; }
+code { font-family: 'Inconsolata', monospace !important; font-size: 0.85rem !important; }
+
+/* ── CODE PASTE ATTACHMENT ── */
+.code-attachment {
+  border: 1px solid rgba(6,182,212,0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+  background: rgba(6,182,212,0.04);
+}
+
+.code-attach-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(6,182,212,0.15);
+  background: rgba(6,182,212,0.06);
+}
+
+.code-attach-icon {
+  font-size: 0.75rem; color: var(--c1);
+}
+
+.code-attach-name {
+  font-size: 0.72rem; color: var(--c1);
+  flex: 1; font-family: 'Inconsolata', monospace;
+  letter-spacing: 0.04em;
+}
+
+.code-attach-lines {
+  font-size: 0.65rem; color: var(--muted);
+}
+
+.code-attach-expand {
+  background: transparent;
+  border: 1px solid rgba(6,182,212,0.25);
+  border-radius: 3px;
+  color: var(--c1); font-size: 0.62rem;
+  padding: 2px 8px; cursor: pointer;
+  font-family: 'Inconsolata', monospace;
+  letter-spacing: 0.05em;
+  transition: 0.15s;
+}
+
+.code-attach-expand:hover { background: rgba(6,182,212,0.1); }
+
+.code-attach-body {
+  padding: 10px 12px;
+  font-size: 0.78rem; color: var(--muted);
+  font-style: italic;
+}
+
+/* collapsed = just the header, no body */
+.code-attachment.expanded .code-attach-body { display: none; }
+
+/* ── JSON VIEWER ── */
+.json-container {
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 1em 0;
+  background: rgba(124,58,237,0.04);
+}
+
+.json-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(124,58,237,0.15);
+  background: rgba(124,58,237,0.06);
+  cursor: pointer;
+}
+
+.json-badge {
+  font-size: 0.6rem; color: #a78bfa;
+  background: rgba(124,58,237,0.15);
+  border: 1px solid rgba(124,58,237,0.3);
+  padding: 1px 6px; border-radius: 2px;
+  letter-spacing: 0.08em;
+}
+
+.json-toggle { margin-left: auto; font-size: 0.7rem; color: var(--muted); }
+
+.json-body { padding: 0; }
+
+.json-body pre {
+  background: transparent !important;
+  padding: 12px !important;
+  overflow-x: auto;
+  color: #c4b5fd;
+  font-size: 0.8rem !important;
+  white-space: pre;
+}
+
+/* ── STREAMING CURSOR ── */
+.streaming-cursor::after {
+  content: '▋';
+  color: var(--c1);
+  animation: blink 0.7s step-end infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── INPUT SECTION ── */
+.input-section {
+  flex-shrink: 0;
+  padding: 16px 32px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.input-wrap { max-width: 960px; margin: 0 auto; }
+
+/* Attachment preview strip */
+#attachment-strip {
+  display: none;
+  gap: 8px; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+#attachment-strip.has-items { display: flex; }
+
+.attach-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(6,182,212,0.08);
+  border: 1px solid rgba(6,182,212,0.2);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.7rem; color: var(--c1);
+}
+
+.attach-chip-remove {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 0.75rem; padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.attach-chip-remove:hover { color: var(--err); }
+
+.input-row {
+  display: flex; gap: 10px; align-items: flex-end;
+}
+
+/* Left toolbar buttons */
+.input-tools {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+}
+
+.tool-btn {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  width: 36px; height: 36px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  transition: 0.15s;
+  position: relative;
+}
+
+.tool-btn:hover { border-color: var(--c1); color: var(--c1); }
+.tool-btn.active { border-color: var(--warn); color: var(--warn); border-style: solid; }
+
+#file-input-img  { display: none; }
+#file-input-code { display: none; }
+
+#prompt-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'Inconsolata', monospace; font-size: 0.95rem;
+  resize: none; min-height: 52px; max-height: 200px;
+  outline: none; line-height: 1.55;
+  transition: border-color 0.2s;
+}
+
+#prompt-input:focus { border-color: var(--c1); }
+#prompt-input::placeholder { color: var(--muted); }
+
+#run-btn {
+  background: var(--surface);
+  color: var(--c1);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 0 22px; height: 52px;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer; transition: 0.2s;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+#run-btn:hover:not(:disabled) {
+  border-color: var(--c1);
+  background: rgba(6,182,212,0.06);
+}
+
+#run-btn:disabled {
+  background: #1a1a1d; color: var(--muted);
+  border-color: #2a2a2d; cursor: wait;
+}
+
+#run-btn:disabled:hover {
+  background: rgba(239,68,68,0.08);
+  border-color: var(--err); color: var(--err);
+}
+
+.hint-row {
+  display: flex; justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.62rem; color: var(--muted);
+  flex-wrap: wrap; gap: 4px;
+}
+
+.model-hint { color: var(--c1); }
+.model-hint.vision { color: var(--warn); }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+  header { padding: 12px 16px; }
+  .logo { font-size: 1.1rem; }
+  #chat { padding: 16px; gap: 20px; }
+  .input-section { padding: 12px 16px 16px; }
+  .msg-text { padding: 14px 16px; font-size: 0.88rem; }
+  .model-select { max-width: 130px; }
+  #run-btn { padding: 0 14px; font-size: 0.68rem; }
+  .input-tools { flex-direction: row; }
+}
+</style>
 </head>
 <body>
-  <header>
-    <div class="header-wrap">
-      <div class="logo">
-        Nexus<span>//</span>Qwen Architect
-      </div>
-      <div class="header-controls">
-        <select id="model-selector" class="model-select">
-          <option value="llava:16b" selected>LLaVA 16B (Multimodal)</option>
-          <option value="qwen-vl:7b-chat">Qwen-VL 7B</option>
-          <option value="moondream:1.8b-v2">Moondream 1.8B</option>
-          <option value="llama3:instruct">Llama 3 (Text-only)</option>
-          <option value="mistral:7b-instruct">Mistral 7B</option>
-        </select>
-        
-        <div class="status-area">
-          <div id="dot" class="status-dot active"></div>
-          <span id="status-text">Ollama lokalny (localhost:11434)</span>
-        </div>
-      </div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div id="settings-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚙ Server Settings</div>
+
+    <div class="modal-field">
+      <label class="modal-label">Ollama Server URL</label>
+      <input class="modal-input" id="server-url-input"
+        placeholder="http://localhost:11434"
+        value="http://localhost:11434"/>
     </div>
-  </header>
 
-  <div id="chat">
-    <!-- Wiadomości będą generowane przez JS -->
-    <div class="msg-block ai">
-      <div class="msg-meta">AI — Nexus System</div>
-      <div class="msg-text">Witaj w **Nexus Architect**.<br><br>Przygotowałem dla Ciebie zintegrowane środowisko do pracy z modelami LLM + multimodalnymi (LLaVA, Qwen-VL).<br><br>💡 **Działa 100% lokalnie** — brak zewnętrznych zależności.<br>📷 **Obsługuje obrazy** — po prostu kliknij „📷 Upload Image”.<br>💾 **Zapisujesz czat do JSON** — bez GitHuba, bez backendu.</div>
+    <div class="modal-note">
+      <!-- ═══════════════════════════════════════════════
+           HOW TO SWITCH BETWEEN LOCAL AND TUNNEL:
+
+           LOCAL (same machine):
+             http://localhost:11434
+
+           CLOUDFLARE TUNNEL (remote laptop):
+             https://your-tunnel-name.trycloudflare.com
+             (see setup instructions at bottom of file)
+
+           Paste the URL above and click Save.
+           The setting is remembered in localStorage.
+      ═══════════════════════════════════════════════ -->
+      <strong>Local:</strong> use <code>http://localhost:11434</code><br>
+      <strong>Tunnel:</strong> paste your <code>https://xxxx.trycloudflare.com</code> URL here.<br>
+      The setting is saved in your browser.
     </div>
-  </div>
 
-  <div class="input-section">
-    <div class="input-wrap">
-      <div class="input-row">
-        <div class="input-row-col">
-          <textarea id="prompt-input" placeholder="Wpisz polecenie (Enter = wyślij, Shift+Enter = nowa linia)..."></textarea>
-          <div class="hint">
-            <span><kbd>Enter</kbd> wyśćlij | <kbd>Shift</kbd>+<kbd>Enter</kbd> nowa linia</span>
-            <span>MODEL: <strong id="model-name">LLaVA 16B</strong></span>
-          </div>
-
-          <div class="toolbar">
-            <input type="file" id="file-input" accept="image/*">
-            <button id="upload-btn" class="image-btn">📷 Upload Image</button>
-            <span id="file-name" class="image-btn" style="color: var(--c1); cursor: default; border: none;">Nie wybrano pliku</span>
-
-            <div class="img-preview">
-              <img id="preview-img" src="" alt="Preview">
-            </div>
-
-            <button id="save-btn" class="toolbar-btn">💾 Zapisz JSON</button>
-            <button id="load-btn" class="toolbar-btn">📂 Załaduj JSON</button>
-            <button id="clear-btn" class="toolbar-btn">🧹 Wyczyść czat</button>
-          </div>
-
-          <input type="file" id="json-input" accept=".json" style="display:none">
-        </div>
-        <button id="run-btn">Execute // CMD</button>
-      </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn secondary" onclick="closeSettings()">Cancel</button>
+      <button class="modal-btn primary" onclick="saveSettings()">Save &amp; Reconnect</button>
     </div>
   </div>
+</div>
 
-  <script>
-    // --- KONFIGURACJA ---
-    const OLLAMA_URL = "http://localhost:11434/api/generate";
-    // ⚠️ Jeśli Ollama działa na innym porcie/IP — zmień tu: np. http://192.168.1.10:11434/api/generate
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="header-wrap">
+    <div class="logo">Nexus <span>//</span> Ollama</div>
+    <div class="header-right">
+      <span class="vision-badge" id="vision-badge">👁 Vision</span>
+      <select id="model-selector" class="model-select">
+        <option value="">— connecting —</option>
+      </select>
+      <div class="status-area">
+        <div class="sdot" id="sdot"></div>
+        <span id="status-text">init</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()" title="Server settings">⚙</button>
+    </div>
+  </div>
+</header>
 
-    // --- DOM ELEMENTS ---
-    const chatEl = document.getElementById('chat');
-    const promptInput = document.getElementById('prompt-input');
-    const runBtn = document.getElementById('run-btn');
-    const uploadBtn = document.getElementById('upload-btn');
-    const fileInput = document.getElementById('file-input');
-    const fileNameEl = document.getElementById('file-name');
-    const previewEl = document.querySelector('.img-preview');
-    const previewImg = document.getElementById('preview-img');
-    const saveBtn = document.getElementById('save-btn');
-    const loadBtn = document.getElementById('load-btn');
-    const jsonInput = document.getElementById('json-input');
-    const clearBtn = document.getElementById('clear-btn');
-    const modelSelect = document.getElementById('model-selector');
-    const modelNameEl = document.getElementById('model-name');
+<!-- ══ CHAT ══ -->
+<main id="chat">
+  <div class="msg-block system">
+    <div class="msg-meta">System</div>
+    <div class="msg-text">Nexus loaded. Connecting to Ollama server…</div>
+  </div>
+</main>
 
-    // --- STATE ---
-    let currentImageBase64 = null;
-    let chatHistory = [];
+<!-- ══ INPUT ══ -->
+<div class="input-section">
+  <div class="input-wrap">
 
-    // --- RENDER MESSAGE ---
-    function addMessage(role, text, imageBase64 = null) {
-      const msgBlock = document.createElement('div');
-      msgBlock.className = `msg-block ${role}`;
+    <!-- Attachment chips strip -->
+    <div id="attachment-strip"></div>
 
-      const meta = document.createElement('div');
-      meta.className = 'msg-meta';
-      meta.textContent = role === 'user' ? 'Użytkownik' : 'AI — Ollama';
+    <div class="input-row">
+      <div class="input-tools">
+        <!-- Image upload (only enabled for vision models) -->
+        <label class="tool-btn" id="img-btn" title="Upload image (vision models only)">
+          📷
+          <input type="file" id="file-input-img" accept="image/*"/>
+        </label>
+        <!-- Code/file paste as attachment -->
+        <label class="tool-btn" id="code-btn" title="Attach code / file as block">
+          📎
+          <input type="file" id="file-input-code" accept=".txt,.js,.ts,.py,.html,.css,.json,.md,.sh,.rs,.go,.cpp,.c,.java,.sql,.yaml,.toml,.xml,.csv"/>
+        </label>
+      </div>
 
-      const textDiv = document.createElement('div');
-      textDiv.className = 'msg-text';
-      textDiv.innerHTML = marked.parse(text);
+      <textarea id="prompt-input" placeholder="Type your prompt… (Enter to send, Shift+Enter for newline)" rows="1"></textarea>
+      <button id="run-btn">Send ▶</button>
+    </div>
 
-      msgBlock.appendChild(meta);
-      msgBlock.appendChild(textDiv);
+    <div class="hint-row">
+      <span id="key-hint">Enter — send · Shift+Enter — newline</span>
+      <span class="model-hint" id="model-hint">no model selected</span>
+    </div>
+  </div>
+</div>
 
-      if (imageBase64) {
-        const img = document.createElement('img');
-        img.src = imageBase64;
-        img.style.maxWidth = '300px';
-        img.style.borderRadius = '6px';
-        img.style.border = '1px solid var(--border)';
-        textDiv.appendChild(img);
-      }
+<script>
+/* ═══════════════════════════════════════════════════════════
+   NEXUS — Configuration
+   ═══════════════════════════════════════════════════════════
 
-      chatEl.appendChild(msgBlock);
-      chatEl.scrollTop = chatEl.scrollHeight;
+   SERVER URL OPTIONS:
+   ─────────────────────────────────────────────────────────
+   Option A — Local (Ollama running on same PC as browser):
+     DEFAULT_SERVER = "http://localhost:11434"
 
-      // Zapisz do historii
-      chatHistory.push({
-        role: role === 'user' ? 'user' : 'assistant',
-        content: text,
-        image: imageBase64 ? imageBase64 : undefined
-      });
+   Option B — Cloudflare Tunnel (Ollama on remote laptop,
+     accessed through tunnel from any browser anywhere):
+     DEFAULT_SERVER = "https://your-name.trycloudflare.com"
+
+   Users can also change this at runtime via ⚙ Settings.
+   ═══════════════════════════════════════════════════════════ */
+
+const DEFAULT_SERVER = "http://localhost:11434";
+
+// Vision-capable model name patterns (matched against model name)
+const VISION_PATTERNS = ["llava", "qwen-vl", "qwen2-vl", "bakllava", "moondream", "minicpm-v", "cogvlm", "internvl", "pixtral", "llama3.2-vision", "gemma3"];
+
+/* ════════════════════════ STATE ════════════════════════ */
+let serverUrl       = localStorage.getItem("nexus_server") || DEFAULT_SERVER;
+let currentModel    = "";
+let isGenerating    = false;
+let abortController = null;
+let uploadedImage   = null;   // { base64, name, mimeType }
+let attachedCode    = null;   // { text, name, lines }
+let pingIntervalId  = null;
+let lastServerState = null;   // "online" | "offline" — avoids UI flicker
+
+/* ════════════════════════ DOM ════════════════════════ */
+const chat         = document.getElementById("chat");
+const textarea     = document.getElementById("prompt-input");
+const runBtn       = document.getElementById("run-btn");
+const modelSel     = document.getElementById("model-selector");
+const sdot         = document.getElementById("sdot");
+const statusText   = document.getElementById("status-text");
+const modelHint    = document.getElementById("model-hint");
+const visionBadge  = document.getElementById("vision-badge");
+const strip        = document.getElementById("attachment-strip");
+const imgInput     = document.getElementById("file-input-img");
+const codeInput    = document.getElementById("file-input-code");
+const imgBtn       = document.getElementById("img-btn");
+const settingsModal= document.getElementById("settings-modal");
+
+/* ════════════════════════ SETTINGS ════════════════════════ */
+function openSettings() {
+  document.getElementById("server-url-input").value = serverUrl;
+  settingsModal.classList.add("open");
+}
+
+function closeSettings() {
+  settingsModal.classList.remove("open");
+}
+
+function saveSettings() {
+  const val = document.getElementById("server-url-input").value.trim().replace(/\/+$/, "");
+  if (!val) return;
+  serverUrl = val;
+  localStorage.setItem("nexus_server", serverUrl);
+  closeSettings();
+  lastServerState = null; // force status refresh
+  checkServer();
+}
+
+// Close modal on backdrop click
+settingsModal.addEventListener("click", e => {
+  if (e.target === settingsModal) closeSettings();
+});
+
+/* ════════════════════════ STATUS (ping) ════════════════════════ */
+async function checkServer() {
+  // Don't change status to "offline" while actively generating
+  if (isGenerating) return;
+
+  try {
+    const res  = await fetch(`${serverUrl}/api/tags`, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) throw new Error("bad response");
+    const data = await res.json();
+
+    if (lastServerState !== "online") {
+      lastServerState = "online";
+      setStatus("online", "server connected", "online");
     }
 
-    // --- UPLOAD IMAGE HANDLER ---
-    uploadBtn.addEventListener('click', () => fileInput.click());
+    populateModels(data.models || []);
 
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) {
-        fileNameEl.textContent = 'Nie wybrano pliku';
-        currentImageBase64 = null;
-        previewEl.classList.remove('active');
-        return;
-      }
+  } catch(e) {
+    if (lastServerState !== "offline") {
+      lastServerState = "offline";
+      setStatus("offline", "server offline", "offline");
+    }
+  }
+}
 
-      // Sprawdź typ pliku
-      if (!file.type.startsWith('image/')) {
-        alert('❌ Tylko obrazy (PNG/JPG)');
-        return;
-      }
+function setStatus(dotClass, text, state) {
+  sdot.className = "sdot " + dotClass;
+  statusText.textContent = text;
+}
 
-      // Przetwórz na Base64
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result; // np. "data:image/png;base64,iVBORw0KGgo..."
-        currentImageBase64 = base64;
-        fileNameEl.textContent = `✔ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-        previewImg.src = base64;
-        previewEl.classList.add('active');
-      };
-      reader.readAsDataURL(file);
+function setStatusBusy() {
+  sdot.className = "sdot busy";
+  statusText.textContent = "generating…";
+}
+
+function restoreStatus() {
+  if (lastServerState === "online") {
+    setStatus("online", "server connected", "online");
+  } else {
+    setStatus("offline", "server offline", "offline");
+  }
+}
+
+/* ════════════════════════ MODEL LIST ════════════════════════ */
+function populateModels(models) {
+  const prev = modelSel.value;
+  modelSel.innerHTML = "";
+
+  if (models.length === 0) {
+    const o = document.createElement("option");
+    o.value = ""; o.textContent = "No models found";
+    modelSel.appendChild(o);
+    return;
+  }
+
+  models.forEach(m => {
+    const name = m.name || m;
+    const o = document.createElement("option");
+    o.value = name;
+    o.textContent = name;
+    modelSel.appendChild(o);
+  });
+
+  // Restore previous selection if still available
+  if (prev && [...modelSel.options].some(o => o.value === prev)) {
+    modelSel.value = prev;
+  }
+
+  currentModel = modelSel.value;
+  updateModelHint();
+}
+
+function isVisionModel(name) {
+  const n = (name || "").toLowerCase();
+  return VISION_PATTERNS.some(p => n.includes(p));
+}
+
+function updateModelHint() {
+  currentModel = modelSel.value;
+  const vision = isVisionModel(currentModel);
+  modelHint.textContent = currentModel
+    ? (vision ? `📷 ${currentModel.toUpperCase()} (vision)` : `model: ${currentModel.toUpperCase()}`)
+    : "no model selected";
+  modelHint.className = "model-hint" + (vision ? " vision" : "");
+  visionBadge.className = "vision-badge" + (vision ? " show" : "");
+
+  // Enable/disable image button based on vision support
+  imgBtn.style.opacity = vision ? "1" : "0.35";
+  imgBtn.title = vision
+    ? "Upload image (vision model detected)"
+    : "Vision not supported by this model";
+}
+
+modelSel.addEventListener("change", updateModelHint);
+
+/* ════════════════════════ TEXTAREA ════════════════════════ */
+textarea.addEventListener("input", function() {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 200) + "px";
+});
+
+textarea.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendPrompt();
+  }
+});
+
+runBtn.addEventListener("click", () => {
+  if (isGenerating) {
+    // Cancel
+    abortController?.abort();
+  } else {
+    sendPrompt();
+  }
+});
+
+/* ════════════════════════ IMAGE UPLOAD ════════════════════════ */
+imgInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!isVisionModel(currentModel)) {
+    appendMsg("error", "Error", "Selected model doesn't support images. Switch to a vision model (llava, qwen-vl, etc.) first.");
+    imgInput.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const full   = ev.target.result;
+    const base64 = full.split(",")[1];
+    uploadedImage = { base64, name: file.name, mimeType: file.type, dataUrl: full };
+    addImageChip(file.name, full);
+  };
+  reader.readAsDataURL(file);
+  imgInput.value = "";
+});
+
+/* ════════════════════════ CODE ATTACHMENT ════════════════════════ */
+// Threshold: if pasted text has more than this many lines OR chars → treat as code attachment
+const CODE_ATTACH_LINES = 20;
+const CODE_ATTACH_CHARS = 800;
+
+// Detect large paste in textarea
+textarea.addEventListener("paste", e => {
+  const pasted = e.clipboardData.getData("text");
+  const lines  = pasted.split("\n").length;
+  if (lines >= CODE_ATTACH_LINES || pasted.length >= CODE_ATTACH_CHARS) {
+    e.preventDefault();
+    attachCode(pasted, "pasted-code.txt");
+  }
+});
+
+// File-based code attach
+codeInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    attachCode(ev.target.result, file.name);
+  };
+  reader.readAsText(file);
+  codeInput.value = "";
+});
+
+function attachCode(text, name) {
+  attachedCode = { text, name, lines: text.split("\n").length };
+  addCodeChip(name, attachedCode.lines);
+}
+
+/* ════════════════════════ ATTACHMENT STRIP ════════════════════════ */
+function addImageChip(name, dataUrl) {
+  const chip = document.createElement("div");
+  chip.className = "attach-chip";
+  chip.id = "chip-image";
+  chip.innerHTML = `📷 <span>${name}</span>
+    <button class="attach-chip-remove" onclick="removeImage()">✕</button>`;
+  const existing = document.getElementById("chip-image");
+  if (existing) existing.remove();
+  strip.appendChild(chip);
+  strip.classList.add("has-items");
+}
+
+function addCodeChip(name, lines) {
+  const chip = document.createElement("div");
+  chip.className = "attach-chip";
+  chip.id = "chip-code";
+  chip.innerHTML = `📎 <span>${name} (${lines} lines)</span>
+    <button class="attach-chip-remove" onclick="removeCode()">✕</button>`;
+  const existing = document.getElementById("chip-code");
+  if (existing) existing.remove();
+  strip.appendChild(chip);
+  strip.classList.add("has-items");
+}
+
+function removeImage() {
+  uploadedImage = null;
+  const chip = document.getElementById("chip-image");
+  if (chip) chip.remove();
+  if (!strip.children.length) strip.classList.remove("has-items");
+  imgInput.value = "";
+}
+
+function removeCode() {
+  attachedCode = null;
+  const chip = document.getElementById("chip-code");
+  if (chip) chip.remove();
+  if (!strip.children.length) strip.classList.remove("has-items");
+}
+
+/* ════════════════════════ MESSAGE RENDERING ════════════════════════ */
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildUserBubble(text, image, codeAttach) {
+  let html = "";
+
+  // Plain escaped text — no markdown, no bold
+  if (text) html += `<div>${escapeHtml(text)}</div>`;
+
+  // Image preview
+  if (image) {
+    html += `<div class="msg-img"><img src="${image.dataUrl}" alt="${image.name}"/></div>`;
+  }
+
+  // Code attachment display in message
+  if (codeAttach) {
+    const lineCount = codeAttach.lines;
+    html += `
+      <div class="code-attachment" id="ca-${Date.now()}">
+        <div class="code-attach-header">
+          <span class="code-attach-icon">📎</span>
+          <span class="code-attach-name">${escapeHtml(codeAttach.name)}</span>
+          <span class="code-attach-lines">${lineCount} lines</span>
+          <button class="code-attach-expand" onclick="expandAttachment(this)">expand</button>
+        </div>
+        <div class="code-attach-body" style="display:none">
+          <pre style="background:transparent;padding:10px;overflow-x:auto;font-size:0.78rem;color:var(--muted)">${escapeHtml(codeAttach.text)}</pre>
+        </div>
+      </div>`;
+  }
+
+  return html;
+}
+
+function expandAttachment(btn) {
+  const container = btn.closest(".code-attachment");
+  const body      = container.querySelector(".code-attach-body");
+  const isOpen    = body.style.display !== "none";
+  body.style.display = isOpen ? "none" : "block";
+  btn.textContent    = isOpen ? "expand" : "collapse";
+}
+
+// Custom marked renderer — code blocks with copy button
+const renderer = new marked.Renderer();
+
+renderer.code = function(token) {
+  const raw  = token.text || "";
+  const lang = token.lang || "";
+  let highlighted = "";
+  try {
+    highlighted = lang && hljs.getLanguage(lang)
+      ? hljs.highlight(raw, { language: lang }).value
+      : hljs.highlightAuto(raw).value;
+  } catch(e) {
+    highlighted = escapeHtml(raw);
+  }
+  const escapedRaw = escapeHtml(raw);
+  return `<div class="code-container">
+    <div class="code-header">
+      <span class="code-lang">${lang || "code"}</span>
+      <button class="code-btn" onclick="copyCode(this)">Copy</button>
+      <button class="code-btn" onclick="downloadCode(this,'${lang||'txt'}')">↓</button>
+    </div>
+    <pre><code class="hljs" data-raw="${escapedRaw}">${highlighted}</code></pre>
+  </div>`;
+};
+
+// Detect and render JSON responses
+function maybeRenderJson(text) {
+  const trimmed = text.trim();
+  // Check if it looks like JSON
+  if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length > 10) {
+    try {
+      const parsed  = JSON.parse(trimmed);
+      const pretty  = JSON.stringify(parsed, null, 2);
+      const escaped = escapeHtml(pretty);
+      return `<div class="json-container">
+        <div class="json-header" onclick="toggleJson(this)">
+          <span class="json-badge">JSON</span>
+          <span style="font-size:0.72rem;color:var(--muted)">Structured response detected</span>
+          <span class="json-toggle">▼</span>
+        </div>
+        <div class="json-body">
+          <pre>${escaped}</pre>
+        </div>
+      </div>`;
+    } catch(e) { /* not valid JSON */ }
+  }
+  return null;
+}
+
+function toggleJson(header) {
+  const body   = header.nextElementSibling;
+  const toggle = header.querySelector(".json-toggle");
+  const isOpen = body.style.display !== "none";
+  body.style.display = isOpen ? "none" : "block";
+  toggle.textContent = isOpen ? "▶" : "▼";
+}
+
+marked.setOptions({ renderer, breaks: true, gfm: true });
+
+/* ════════════════════════ APPEND MESSAGE ════════════════════════ */
+function appendMsg(type, label, htmlOrText, isHtml = false) {
+  const block = document.createElement("div");
+  block.className = `msg-block ${type}`;
+  const content = isHtml ? htmlOrText : escapeHtml(htmlOrText);
+  block.innerHTML = `<div class="msg-meta">${label}</div>
+    <div class="msg-text">${content}</div>`;
+  chat.appendChild(block);
+  chat.scrollTop = chat.scrollHeight;
+  return block.querySelector(".msg-text");
+}
+
+/* ════════════════════════ SEND PROMPT ════════════════════════ */
+async function sendPrompt() {
+  if (isGenerating) return;
+
+  const rawText = textarea.value.trim();
+  if (!rawText && !uploadedImage && !attachedCode) return;
+
+  if (!currentModel) {
+    appendMsg("error", "Error", "No model selected. Is Ollama running?");
+    return;
+  }
+
+  // Build full prompt text sent to API
+  let fullPrompt = rawText;
+  if (attachedCode) {
+    fullPrompt += `\n\n--- Attached file: ${attachedCode.name} ---\n${attachedCode.text}\n--- end of file ---`;
+  }
+
+  // ── Render user message (visual only, plain text) ──
+  const userBubble = document.createElement("div");
+  userBubble.className = "msg-block user";
+  userBubble.innerHTML = `
+    <div class="msg-meta">You</div>
+    <div class="msg-text">${buildUserBubble(rawText, uploadedImage, attachedCode)}</div>`;
+  chat.appendChild(userBubble);
+
+  // Clear input
+  textarea.value = "";
+  textarea.style.height = "52px";
+
+  // Snapshot and clear attachments
+  const imgSnap  = uploadedImage;
+  const codeSnap = attachedCode;
+  removeImage();
+  removeCode();
+  chat.scrollTop = chat.scrollHeight;
+
+  // ── UI state: generating ──
+  isGenerating = true;
+  runBtn.textContent = "■ Stop";
+  runBtn.disabled = false; // keep enabled for stop action
+  setStatusBusy();
+  abortController = new AbortController();
+
+  // Create AI response bubble
+  const aiBlock = document.createElement("div");
+  aiBlock.className = "msg-block ai";
+  aiBlock.innerHTML = `<div class="msg-meta">Ollama · ${currentModel}</div>
+    <div class="msg-text streaming-cursor" id="ai-response"></div>`;
+  chat.appendChild(aiBlock);
+  const responseEl = aiBlock.querySelector("#ai-response");
+  chat.scrollTop = chat.scrollHeight;
+
+  // ── Build API payload ──
+  const payload = {
+    model:  currentModel,
+    prompt: fullPrompt,
+    stream: true
+  };
+
+  if (imgSnap) payload.images = [imgSnap.base64];
+
+  try {
+    const res = await fetch(`${serverUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: abortController.signal
     });
 
-    // --- CLEAR CHAT ---
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Czy wyczyścić cały czat?')) {
-        chatHistory = [];
-        chatEl.innerHTML = '';
-        // Dodaj przywitalną wiadomość
-        addMessage('ai', '✅ Czat wyczyszczony. Gotów na nowe zapytania.');
-      }
-    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+    }
 
-    // --- SAVE TO JSON ---
-    saveBtn.addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(chatHistory, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `chat-nexus-${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
+    // ── Stream reading ──
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulated = "";
 
-    // --- LOAD FROM JSON ---
-    loadBtn.addEventListener('click', () => jsonInput.click());
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    jsonInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n").filter(l => l.trim());
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
+      for (const line of lines) {
         try {
-          const data = JSON.parse(event.target.result);
-          if (!Array.isArray(data)) throw new Error('Nieprawidłowy format JSON');
-
-          chatHistory = data;
-          chatEl.innerHTML = '';
-          for (let msg of data) {
-            if (msg.role === 'user' || msg.role === 'assistant') {
-              addMessage(
-                msg.role === 'user' ? 'user' : 'ai',
-                msg.content,
-                msg.image
-              );
-            }
+          const json = JSON.parse(line);
+          if (json.response) {
+            accumulated += json.response;
+            // Live update — render markdown as it streams
+            const jsonHtml = maybeRenderJson(accumulated.trim());
+            responseEl.innerHTML = jsonHtml || marked.parse(accumulated);
+            chat.scrollTop = chat.scrollHeight;
           }
-
-          alert('✅ Czat załadowany pomyślnie!');
-        } catch (err) {
-          alert('❌ Błąd odczytu JSON: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-      // Reset input po użyciu
-      e.target.value = '';
-    });
-
-    // --- EXECUTE PROMPT ---
-    promptInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        runButton();
-      }
-    });
-
-    runBtn.addEventListener('click', runButton);
-
-    async function runButton() {
-      const prompt = promptInput.value.trim();
-      if (!prompt && !currentImageBase64) {
-        alert('📝 Wpisz prompt lub dodaj obraz.');
-        return;
-      }
-
-      // Wyłącz przycisk + update UI
-      runBtn.disabled = true;
-      runBtn.textContent = '🤖 Processing...';
-      promptInput.disabled = true;
-
-      try {
-        // Dodaj użytkownika
-        addMessage('user', prompt || ' 🖼️ Obraz bez komentarza', currentImageBase64);
-
-        // Przygotuj zapytanie
-        const payload = {
-          model: modelSelect.value,
-          prompt: prompt || '',
-          stream: false
-        };
-
-        if (currentImageBase64) {
-          // Tylko dla modeli multimodalnych (LLaVA/Qwen-VL)
-          if (!payload.prompt) payload.prompt = 'Opisz ten obraz.';
-          payload.images = [currentImageBase64.replace(/^data:image\/[^;]+;base64,/, '')];
-        }
-
-        // Wywołaj Ollama
-        const response = await fetch(OLLAMA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        const text = result.response || 'Brak odpowiedzi.';
-
-        // Dodaj AI
-        addMessage('ai', text);
-
-      } catch (error) {
-        console.error(error);
-        addMessage('error', `⚠️ Błąd: ${error.message}<br>💡 Sprawdź czy Ollama działa na <code>localhost:11434</code>`);
-      } finally {
-        // Włącz przycisk + reset
-        runBtn.disabled = false;
-        runBtn.textContent = 'Execute // CMD';
-        promptInput.disabled = false;
-        promptInput.focus();
-        currentImageBase64 = null;
-
-        // Reset upload
-        fileInput.value = '';
-        fileNameEl.textContent = 'Nie wybrano pliku';
-        previewEl.classList.remove('active');
+          if (json.done) break;
+        } catch(e) { /* partial JSON chunk, skip */ }
       }
     }
 
-    // --- DYNAMIC MODEL NAME ---
-    modelSelect.addEventListener('change', () => {
-      const selected = modelSelect.options[modelSelect.selectedIndex].text;
-      modelNameEl.textContent = selected;
-    });
+    // Final render — clean cursor
+    responseEl.classList.remove("streaming-cursor");
+    const finalJsonHtml = maybeRenderJson(accumulated.trim());
+    if (finalJsonHtml) {
+      responseEl.innerHTML = finalJsonHtml;
+    } else {
+      responseEl.innerHTML = marked.parse(accumulated);
+    }
 
-    // Inicjalny model
-    modelNameEl.textContent = modelSelect.options[modelSelect.selectedIndex].text;
+  } catch(e) {
+    if (e.name === "AbortError") {
+      responseEl.classList.remove("streaming-cursor");
+      responseEl.innerHTML += `<br><span style="color:var(--muted);font-size:0.8rem">— generation stopped —</span>`;
+    } else {
+      aiBlock.remove();
+      appendMsg("error", "Connection Error",
+        `Could not reach Ollama at ${serverUrl}.\n\nCheck:\n• Ollama is running (ollama serve)\n• OLLAMA_ORIGINS is set (see setup instructions)\n• Server URL in ⚙ Settings is correct\n\nError: ${e.message}`);
+    }
+  } finally {
+    isGenerating = false;
+    runBtn.textContent = "Send ▶";
+    runBtn.disabled = false;
+    responseEl.id = ""; // clean up id
+    restoreStatus();
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
 
-  </script>
+/* ════════════════════════ CODE HELPERS ════════════════════════ */
+function copyCode(btn) {
+  const raw = btn.closest(".code-container").querySelector("code").dataset.raw || "";
+  // unescape html entities for clipboard
+  const ta = document.createElement("textarea");
+  ta.value = raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+  btn.textContent = "Copied!"; btn.classList.add("copied");
+  setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+}
+
+function downloadCode(btn, ext) {
+  const raw = btn.closest(".code-container").querySelector("code").dataset.raw || "";
+  const text = raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
+  const blob = new Blob([text], { type: "text/plain" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = `nexus_code.${ext}`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ════════════════════════ INIT ════════════════════════ */
+// Restore saved server URL
+document.getElementById("server-url-input").value = serverUrl;
+
+checkServer();
+setInterval(checkServer, 12000);
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SETUP INSTRUCTIONS — READ BEFORE DEPLOYING
+     ═══════════════════════════════════════════════════════════════
+
+  ── OPTION A: LOCAL (browser and Ollama on same machine) ──────
+  No tunnel needed. Just:
+    1. Install Ollama from https://ollama.com
+    2. Set CORS header so browser can reach it:
+         Linux/Mac:  OLLAMA_ORIGINS="*" ollama serve
+         Windows:    setx OLLAMA_ORIGINS "*"  (then restart Ollama)
+    3. Pull a model:  ollama pull qwen2.5-coder
+    4. Open this HTML file in your browser — done!
+
+  ── OPTION B: TUNNEL (Ollama on old laptop, UI on w-che.pages.dev) ─
+  STEP 1 — Install Ollama on old laptop:
+    Fedora:   curl -fsSL https://ollama.com/install.sh | sh
+    Windows:  Download installer from https://ollama.com/download
+
+  STEP 2 — Set CORS to allow your site:
+    Fedora:
+      sudo systemctl edit ollama
+      Add under [Service]:
+        Environment="OLLAMA_ORIGINS=https://w-che.pages.dev"
+      Then: sudo systemctl restart ollama
+
+    Windows (PowerShell as admin):
+      [System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS","https://w-che.pages.dev","Machine")
+      (Restart Ollama after this)
+
+  STEP 3 — Install cloudflared on old laptop:
+    Fedora:
+      wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.rpm
+      sudo rpm -i cloudflared-linux-amd64.rpm
+
+    Windows:
+      winget install Cloudflare.cloudflared
+      (or download .exe from github.com/cloudflare/cloudflared/releases)
+
+  STEP 4 — Start the tunnel (run this every time on old laptop):
+    cloudflared tunnel --url http://localhost:11434
+
+    It prints something like:
+      https://random-words-here.trycloudflare.com
+    COPY THAT URL.
+
+  STEP 5 — Paste URL into Nexus:
+    Open w-che.pages.dev, click ⚙, paste the tunnel URL, click Save.
+    Status should change to "server connected".
+
+  STEP 6 (optional) — Make tunnel permanent on Fedora:
+    sudo cloudflared service install
+    (Runs tunnel automatically on boot)
+
+  IMPORTANT NOTES:
+  • Free trycloudflare.com tunnels get a NEW random URL every restart.
+    If you restart Ollama or the laptop, you must get the new URL and
+    paste it again in Settings. To get a permanent URL, log into
+    Cloudflare and create a named tunnel (free).
+  • OLLAMA_ORIGINS must exactly match your site URL or be "*" for local.
+  • If you see CORS errors in browser DevTools, the ORIGINS env var
+    is not set correctly.
+
+═══════════════════════════════════════════════════════════════ -->
 </body>
 </html>
