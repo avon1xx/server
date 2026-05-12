@@ -1,0 +1,103 @@
+/* ═══════════════════════════════════════════════════════════
+   NEXUS v3 — How‑To Mode (Tree, Skill Level, Version Bar)
+═══════════════════════════════════════════════════════════ */
+
+.howto-version-bar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.ht-ver-btn {
+  background:var(--bg2);
+  border:1px solid var(--line);
+  color:var(--text);
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.ht-ver-btn:hover {
+  border-color:var(--c1);
+}
+
+.ht-ver-indicator {
+  font-size:0.82rem;
+  color:var(--muted);
+}
+
+.howto-tree { font-size: 0.85rem; }
+.ht-node {
+  border: 1px solid var(--border); border-radius: 5px;
+  overflow: hidden; margin-bottom: 6px;
+  animation: msgIn 0.2s ease;
+}
+.ht-node-header {
+  padding: 9px 12px; background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; transition: background 0.12s;
+}
+.ht-node-header:hover { background: var(--surface2); }
+.ht-node-header.open { border-bottom: 1px solid var(--border); background: var(--surface2); }
+.ht-arrow { font-size: 0.65rem; color: var(--muted); transition: transform 0.15s; flex-shrink: 0; }
+.ht-node-header.open .ht-arrow { transform: rotate(90deg); }
+.ht-label { flex: 1; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700; }
+.ht-badge { font-size: 0.56rem; padding: 1px 5px; border-radius: 2px; background: var(--c1dim); color: var(--c1); border: 1px solid rgba(6,182,212,0.18); }
+.ht-node-body { padding: 10px 12px 10px 28px; background: var(--bg); display: none; }
+/* Drag-over highlight */
+#chat.drag-over {
+  outline: 2px dashed var(--c1);
+  outline-offset: -8px;
+  background: rgba(6,182,212,0.03);
+}
+.ht-node-body.open { display: block; }
+/* ── MINIMAL MODE ── */
+body.minimal .mm-stats,
+body.minimal .mm-time,
+body.minimal .token-chip,
+body.minimal .perf-chip,
+body.minimal .vision-chip,
+body.minimal .provider-tag,
+body.minimal #tpl-bar,
+body.minimal .sidebar-bottom { display: none !important; }
+
+body.minimal #sidebar { width: 200px; }
+body.minimal .sidebar-top { padding: 8px; }
+body.minimal .nb-header .nb-title,
+body.minimal #notebook-panel { width: 0 !important; }
+
+body.minimal #chat { padding: 12px 10px; gap: 10px; }
+body.minimal .msg-body { padding: 10px 12px; font-size: 0.86rem; }
+body.minimal .input-section { padding: 8px 10px 12px; }
+body.minimal .msg-actions { opacity: 1; } /* Always show in minimal */
+
+body.minimal .icon-btn { width: 26px; height: 26px; }
+body.minimal #topbar { padding: 6px 10px; gap: 7px; }
+
+/* Minimal: hide text labels on mode tabs, keep just color indicator */
+body.minimal .mode-tab { font-size: 0 !important; padding: 5px 2px; }
+body.minimal .mode-tab::after {
+  content: "●"; font-size: 6px; display: block; text-align: center;
+}
+body.minimal .mode-tab.active::after { color: var(--c1); }
+.ht-node-body ul { padding-left: 14px; }
+.ht-node-body li { margin-bottom: 4px; font-size: 0.82rem; color: var(--text2); }
+.ht-node-body code { background: var(--code-bg); border: 1px solid var(--border2); border-radius: 2px; padding: 0 3px; font-size: 0.78rem; color: var(--c1); }
+.ht-expand-btn {
+  margin-top: 8px; font-size: 0.62rem; color: var(--c1);
+  background: transparent; border: 1px dashed rgba(6,182,212,0.3);
+  border-radius: 3px; padding: 3px 9px; cursor: pointer; transition: 0.12s;
+}
+.ht-expand-btn:hover { background: var(--c1dim); }
+
+/* skill level selector */
+.skill-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+.skill-btn {
+  padding: 4px 12px; border-radius: 3px; font-size: 0.65rem; cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.05em;
+  transition: 0.12s;
+}
+.skill-btn.active { background: var(--c1dim); border-color: rgba(6,182,212,0.35); color: var(--c1); }
