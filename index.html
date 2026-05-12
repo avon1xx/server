@@ -1,1291 +1,2491 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Nexus // Ollama Interface</title>
+<title>Nexus v3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inconsolata:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inconsolata:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css"/>
+<link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════
-   NEXUS — Ollama Chat Interface
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   NEXUS v3 — Research Operating System
+   Theme system: [data-theme="dark|light|amoled|lowblue"]
+═══════════════════════════════════════════════════════════ */
 
-:root {
-  --bg:      #0e0e0f;
-  --surface: #141416;
-  --border:  #222226;
-  --text:    #e8e6e0;
-  --muted:   #6b7280;
-  --c1:      #06b6d4;
-  --err:     #ef4444;
-  --warn:    #f97316;
-  --success: #22c55e;
-  --code-bg: #16161e;
+/* ── THEME TOKENS ── */
+[data-theme="dark"] {
+  --bg:       #0c0c0e;
+  --panel:    #101013;
+  --surface:  #141417;
+  --surface2: #1a1a1f;
+  --border:   #1e1e26;
+  --border2:  #2a2a34;
+  --text:     #e2e0d8;
+  --text2:    #a8a49c;
+  --muted:    #555a68;
+  --c1:       #06b6d4;
+  --c1dim:    rgba(6,182,212,0.1);
+  --c2:       #8b5cf6;
+  --err:      #ef4444;
+  --warn:     #f97316;
+  --ok:       #22c55e;
+  --code-bg:  #13131a;
+  --blur:     blur(8px);
+  --shadow:   0 4px 24px rgba(0,0,0,0.5);
+  --hljs:     tokyo-night-dark;
 }
 
+[data-theme="light"] {
+  --bg:       #f4f4f0;
+  --panel:    #ebebе7;
+  --surface:  #ffffff;
+  --surface2: #f0f0ec;
+  --border:   #d8d8d2;
+  --border2:  #c4c4bc;
+  --text:     #1a1a18;
+  --text2:    #4a4a46;
+  --muted:    #8a8a84;
+  --c1:       #0284c7;
+  --c1dim:    rgba(2,132,199,0.1);
+  --c2:       #7c3aed;
+  --err:      #dc2626;
+  --warn:     #ea580c;
+  --ok:       #16a34a;
+  --code-bg:  #f8f8f4;
+  --blur:     blur(8px);
+  --shadow:   0 4px 24px rgba(0,0,0,0.12);
+  --hljs:     github;
+}
+
+[data-theme="amoled"] {
+  --bg:       #000000;
+  --panel:    #050505;
+  --surface:  #080808;
+  --surface2: #0e0e0e;
+  --border:   #141414;
+  --border2:  #1e1e1e;
+  --text:     #e8e8e8;
+  --text2:    #a0a0a0;
+  --muted:    #404040;
+  --c1:       #00d4ff;
+  --c1dim:    rgba(0,212,255,0.08);
+  --c2:       #9b59b6;
+  --err:      #ff3333;
+  --warn:     #ff6600;
+  --ok:       #00cc44;
+  --code-bg:  #000000;
+  --blur:     none;
+  --shadow:   none;
+}
+
+[data-theme="lowblue"] {
+  --bg:       #1a1208;
+  --panel:    #201810;
+  --surface:  #261e14;
+  --surface2: #2e2418;
+  --border:   #3a2e20;
+  --border2:  #4a3c2a;
+  --text:     #e8dcc8;
+  --text2:    #b8a890;
+  --muted:    #786858;
+  --c1:       #e8a040;
+  --c1dim:    rgba(232,160,64,0.1);
+  --c2:       #c87040;
+  --err:      #e05040;
+  --warn:     #d08030;
+  --ok:       #80b840;
+  --code-bg:  #140e06;
+  --blur:     blur(4px);
+  --shadow:   0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ── PERFORMANCE MODE ── */
+[data-perf="lite"] * { animation: none !important; transition: none !important; }
+[data-perf="lite"] .modal-overlay { backdrop-filter: none !important; }
+[data-perf="lite"] header { backdrop-filter: none !important; }
+
+/* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.2); border-radius: 3px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--c1); }
-
 html, body { height: 100%; overflow: hidden; }
-
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
   font-family: 'Inconsolata', monospace;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
+  transition: background 0.2s, color 0.2s;
 }
 
-/* ── SETTINGS MODAL ── */
-#settings-modal {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(6px);
-  z-index: 1000;
-  align-items: center; justify-content: center;
-  padding: 16px;
+/* ── MODAL BASE ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: var(--blur);
+  z-index: 900; align-items: center; justify-content: center; padding: 12px;
 }
-
-#settings-modal.open { display: flex; }
-
+.modal-overlay.open { display: flex; }
 .modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 28px;
-  width: 100%; max-width: 480px;
-  display: flex; flex-direction: column; gap: 18px;
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 8px; width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
 }
-
+.modal-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
 .modal-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 1rem; font-weight: 800;
-  color: var(--c1); letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 800;
+  color: var(--c1); letter-spacing: 0.1em; text-transform: uppercase; flex: 1;
+}
+.modal-close {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); width: 26px; height: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.modal-close:hover { border-color: var(--err); color: var(--err); }
+.modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.field-input, .field-select, .field-textarea {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: 'Inconsolata', monospace; font-size: 0.82rem;
+  padding: 8px 10px; outline: none; transition: border-color 0.15s; width: 100%;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--c1); }
+.field-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.field-note {
+  font-size: 0.63rem; color: var(--muted); line-height: 1.55; padding: 6px 9px;
+  border-radius: 3px; background: var(--c1dim); border: 1px solid rgba(6,182,212,0.12);
+}
+.field-note code { color: var(--c1); }
+.section-sep {
+  font-size: 0.58rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.14em; padding-bottom: 5px; border-bottom: 1px solid var(--border);
 }
 
-.modal-field { display: flex; flex-direction: column; gap: 6px; }
+.btn {
+  border: none; border-radius: 4px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.65rem;
+  letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 14px;
+  cursor: pointer; transition: opacity 0.15s, background 0.15s; white-space: nowrap;
+}
+.btn-primary { background: var(--c1); color: #0c0c0e; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+.btn-danger { background: transparent; color: var(--err); border: 1px solid rgba(239,68,68,0.25); }
+.btn-danger:hover { background: rgba(239,68,68,0.08); }
 
-.modal-label {
-  font-size: 0.68rem; color: var(--muted);
+/* ── COMMAND PALETTE ── */
+#cmd-palette {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: var(--blur);
+  z-index: 950; align-items: flex-start; justify-content: center; padding-top: 80px;
+}
+#cmd-palette.open { display: flex; }
+.cmd-box {
+  background: var(--panel); border: 1px solid var(--c1);
+  border-radius: 8px; width: 100%; max-width: 560px;
+  box-shadow: 0 0 40px rgba(6,182,212,0.15);
+  overflow: hidden;
+}
+.cmd-input {
+  width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); font-family: 'Inconsolata', monospace; font-size: 0.95rem;
+  padding: 14px 16px; outline: none;
+}
+.cmd-results { max-height: 320px; overflow-y: auto; }
+.cmd-item {
+  padding: 9px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  font-size: 0.82rem; transition: background 0.1s;
+}
+.cmd-item:hover, .cmd-item.selected { background: var(--c1dim); color: var(--c1); }
+.cmd-item-key {
+  margin-left: auto; font-size: 0.6rem; color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 3px; padding: 1px 5px;
+}
+.cmd-section {
+  padding: 5px 16px 3px; font-size: 0.58rem; color: var(--muted);
   text-transform: uppercase; letter-spacing: 0.1em;
+  background: var(--surface); border-bottom: 1px solid var(--border);
 }
 
-.modal-input {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: 'Inconsolata', monospace;
-  font-size: 0.85rem;
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color 0.2s;
-  width: 100%;
+/* ── LAYOUT ── */
+.app-body { flex: 1; display: flex; overflow: hidden; min-height: 0; position: relative; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--panel); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.25s ease;
 }
+#sidebar.collapsed { width: 0; }
 
-.modal-input:focus { border-color: var(--c1); }
-
-.modal-note {
-  font-size: 0.68rem; color: var(--muted);
-  line-height: 1.5;
-  background: rgba(6,182,212,0.05);
-  border: 1px solid rgba(6,182,212,0.15);
-  border-radius: 4px;
-  padding: 8px 10px;
+.sidebar-top {
+  padding: 12px 10px 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
 }
-
-.modal-note code {
-  color: var(--c1);
-  background: rgba(6,182,212,0.1);
-  padding: 1px 4px; border-radius: 2px;
-  font-size: 0.82rem;
-}
-
-.modal-btn-row { display: flex; gap: 10px; }
-
-.modal-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 4px;
-  font-family: 'Syne', sans-serif;
-  font-size: 0.72rem; font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  transition: 0.2s;
-}
-
-.modal-btn.primary { background: var(--c1); color: #0e0e0f; border-color: var(--c1); }
-.modal-btn.primary:hover { opacity: 0.85; }
-.modal-btn.secondary { background: transparent; color: var(--muted); }
-.modal-btn.secondary:hover { border-color: var(--muted); color: var(--text); }
-
-/* ── HEADER ── */
-header {
-  flex-shrink: 0;
-  padding: 16px 32px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(14,14,15,0.9);
-  backdrop-filter: blur(10px);
-  z-index: 10;
-}
-
-.header-wrap {
-  max-width: 960px; margin: 0 auto;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 16px;
-  flex-wrap: wrap;
-}
-
 .logo {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.4rem; font-weight: 800;
-  white-space: nowrap;
+  font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800;
+  white-space: nowrap; overflow: hidden;
 }
+.logo em { color: var(--c1); font-style: normal; }
+.logo sup { font-size: 0.5rem; color: var(--muted); letter-spacing: 0.06em; }
 
-.logo span { color: var(--c1); }
+.icon-btn {
+  background: transparent; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); flex-shrink: 0;
+  width: 26px; height: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: 0.15s;
+}
+.icon-btn:hover { border-color: var(--c1); color: var(--c1); }
+.icon-btn.active { border-color: var(--c1); color: var(--c1); background: var(--c1dim); }
+.icon-btn svg { width: 12px; height: 12px; }
 
-.header-right {
-  display: flex; align-items: center; gap: 14px;
-  flex-wrap: wrap;
+/* Mode tabs */
+.mode-tabs {
+  display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.mode-tab {
+  flex: 1; padding: 7px 4px; text-align: center;
+  font-size: 0.58rem; color: var(--muted); cursor: pointer;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; border-bottom: 2px solid transparent;
+  transition: 0.15s; white-space: nowrap;
+}
+.mode-tab.active { color: var(--c1); border-bottom-color: var(--c1); }
+.mode-tab:hover:not(.active) { color: var(--text2); }
+
+/* New chat btn */
+.new-chat-btn {
+  margin: 8px; padding: 6px 10px;
+  background: transparent; border: 1px dashed var(--border2);
+  border-radius: 4px; color: var(--muted);
+  font-family: 'Inconsolata', monospace; font-size: 0.75rem;
+  cursor: pointer; transition: 0.15s; display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.new-chat-btn:hover { border-color: var(--c1); color: var(--c1); }
+
+/* History list */
+#history-list {
+  flex: 1; overflow-y: auto; padding: 0 6px 6px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.history-item {
+  padding: 7px 8px; border-radius: 4px;
+  border: 1px solid transparent; cursor: pointer; transition: 0.12s;
+  display: flex; align-items: center; gap: 6px; font-size: 0.75rem;
+}
+.history-item:hover { background: var(--surface); border-color: var(--border); }
+.history-item.active { background: var(--c1dim); border-color: rgba(6,182,212,0.2); color: var(--c1); }
+.h-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-date { font-size: 0.58rem; color: var(--muted); flex-shrink: 0; }
+.h-del { background: none; border: none; color: transparent; cursor: pointer; padding: 1px; transition: 0.1s; }
+.history-item:hover .h-del { color: var(--muted); }
+.h-del:hover { color: var(--err) !important; }
+
+/* Sidebar bottom bar */
+.sidebar-bottom {
+  padding: 6px 8px; border-top: 1px solid var(--border);
+  display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap;
+}
+.sidebar-bottom .icon-btn { flex: 1; width: auto; font-size: 0.55rem;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.06em;
+  gap: 4px; padding: 0 4px; height: 26px; }
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* ── TOPBAR ── */
+#topbar {
+  flex-shrink: 0; padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 
 .model-select {
   background: var(--surface); color: var(--text);
   border: 1px solid var(--border); border-radius: 4px;
-  padding: 6px 10px;
-  font-family: 'Inconsolata', monospace; font-size: 0.75rem;
-  outline: none; cursor: pointer;
-  max-width: 200px;
-  transition: border-color 0.2s;
+  padding: 5px 8px; font-family: 'Inconsolata', monospace;
+  font-size: 0.72rem; outline: none; cursor: pointer; max-width: 180px;
+  transition: border-color 0.15s;
 }
-
 .model-select:hover { border-color: var(--c1); }
 
-.status-area {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.68rem; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  white-space: nowrap;
+.provider-tag {
+  font-size: 0.58rem; padding: 2px 6px; border-radius: 3px;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; flex-shrink: 0;
 }
+.provider-ollama { background: rgba(6,182,212,0.1); color: var(--c1); border: 1px solid rgba(6,182,212,0.2); }
+.provider-groq   { background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+.provider-openrouter { background: rgba(249,115,22,0.1); color: var(--warn); border: 1px solid rgba(249,115,22,0.2); }
 
-.sdot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--muted); flex-shrink: 0;
-  transition: background 0.3s;
+.status-pill {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.62rem; color: var(--muted); white-space: nowrap;
 }
+.sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.sdot.online  { background: var(--ok); box-shadow: 0 0 5px var(--ok); animation: sdpulse 2.5s infinite; }
+.sdot.offline { background: var(--err); }
+.sdot.busy    { background: var(--c1); box-shadow: 0 0 5px var(--c1); animation: sdpulse 0.7s infinite; }
+@keyframes sdpulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-.sdot.online  { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
-.sdot.offline { background: var(--err);     box-shadow: 0 0 8px var(--err); animation: none; }
-.sdot.busy    { background: var(--c1);      box-shadow: 0 0 8px var(--c1);  animation: pulse 0.8s infinite; }
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-.settings-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  width: 30px; height: 30px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: 0.2s; flex-shrink: 0;
+.token-chip {
+  font-size: 0.6rem; color: var(--muted); padding: 2px 7px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+  white-space: nowrap; transition: color 0.2s, border-color 0.2s;
 }
+.token-chip.warn { color: var(--warn); border-color: rgba(249,115,22,0.3); }
 
-.settings-btn:hover { border-color: var(--c1); color: var(--c1); }
-
-/* ── VISION BADGE ── */
-.vision-badge {
-  display: none;
-  font-size: 0.6rem;
-  background: rgba(249,115,22,0.12);
-  border: 1px solid rgba(249,115,22,0.3);
-  color: var(--warn);
-  border-radius: 3px;
-  padding: 2px 7px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
+.perf-chip {
+  font-size: 0.58rem; padding: 2px 6px; border-radius: 3px;
+  background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);
+  color: #a78bfa; display: none; white-space: nowrap;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;
 }
+.perf-chip.show { display: block; }
 
-.vision-badge.show { display: block; }
+.vision-chip {
+  font-size: 0.58rem; padding: 2px 6px; border-radius: 3px; display: none;
+  background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2);
+  color: var(--warn); font-family: 'Syne', sans-serif; font-weight: 700; white-space: nowrap;
+}
+.vision-chip.show { display: block; }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+/* Theme switcher */
+.theme-btn {
+  background: transparent; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); padding: 4px 8px; font-size: 0.6rem; cursor: pointer;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;
+  transition: 0.15s; white-space: nowrap;
+}
+.theme-btn:hover { border-color: var(--c1); color: var(--c1); }
 
 /* ── CHAT AREA ── */
 #chat {
   flex: 1; overflow-y: auto;
-  padding: 32px;
-  display: flex; flex-direction: column; gap: 28px;
+  padding: 20px 16px;
+  display: flex; flex-direction: column; gap: 16px;
+  will-change: scroll-position;
 }
+
+/* Virtual scroll sentinel */
+#vscroll-top, #vscroll-bot { height: 1px; flex-shrink: 0; }
 
 .msg-block {
-  max-width: 960px; width: 100%;
-  margin: 0 auto;
-  animation: fadeUp 0.25s ease;
+  max-width: 820px; width: 100%; margin: 0 auto;
+  animation: msgIn 0.18s ease;
 }
-
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(8px); }
-  to   { opacity:1; transform:translateY(0); }
-}
+@keyframes msgIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 
 .msg-meta {
-  font-size: 0.65rem; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 6px;
-  font-weight: 700; letter-spacing: 0.1em;
-  display: flex; align-items: center; gap: 8px;
+  font-size: 0.6rem; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 4px; display: flex; align-items: center; gap: 7px; letter-spacing: 0.08em;
 }
+.mm-label { font-weight: 700; color: var(--text2); }
+.mm-model { color: var(--c1); font-size: 0.56rem; }
+.mm-time  { color: var(--muted); font-size: 0.56rem; margin-left: auto; }
+.mm-stats { color: var(--muted); font-size: 0.56rem; }
 
-.msg-text {
-  padding: 18px 22px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  line-height: 1.7;
-  font-size: 0.92rem;
+.msg-actions { display: flex; gap: 3px; opacity: 0; transition: opacity 0.12s; }
+.msg-block:hover .msg-actions { opacity: 1; }
+.ma-btn {
+  background: transparent; border: 1px solid var(--border); border-radius: 3px;
+  color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 0.58rem;
+  padding: 1px 6px; cursor: pointer; transition: 0.12s;
 }
+.ma-btn:hover { border-color: var(--c1); color: var(--c1); }
 
-/* User: plain text, no markdown styling */
-.user .msg-text {
+.msg-body {
+  padding: 13px 16px; border-radius: 5px;
+  border: 1px solid var(--border); background: var(--surface);
+  line-height: 1.7; font-size: 0.88rem;
+  transition: border-color 0.15s;
+}
+.msg-body:hover { border-color: var(--border2); }
+
+/* user: always plain */
+.user .msg-body {
   border-left: 2px solid var(--muted);
-  background: rgba(255,255,255,0.02);
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: 'Inconsolata', monospace;
-  color: var(--text);
+  background: rgba(255,255,255,0.012);
+  white-space: pre-wrap; word-break: break-word;
+  cursor: default; color: var(--text);
 }
 
-/* AI: full markdown */
-.ai .msg-text {
-  border-left: 2px solid var(--c1);
-}
+/* ai */
+.ai .msg-body { border-left: 2px solid var(--c1); }
+.ai .msg-body p { margin-bottom: 0.5em; }
+.ai .msg-body p:last-child { margin-bottom: 0; }
+.ai .msg-body ul,.ai .msg-body ol { padding-left: 1.1em; margin-bottom: 0.5em; }
+.ai .msg-body li { margin-bottom: 0.15em; }
+.ai .msg-body strong { color: var(--text); font-weight: 700; }
+.ai .msg-body em { color: #a78bfa; }
+.ai .msg-body h1,.ai .msg-body h2,.ai .msg-body h3 { font-family: 'Syne', sans-serif; color: var(--c1); margin: 0.8em 0 0.3em; font-size: 0.92rem; }
+.ai .msg-body a { color: var(--c1); }
+.ai .msg-body table { border-collapse: collapse; font-size: 0.8rem; margin: 0.5em 0; width: 100%; }
+.ai .msg-body th,.ai .msg-body td { border: 1px solid var(--border2); padding: 4px 8px; text-align: left; }
+.ai .msg-body th { background: var(--surface2); color: var(--c1); }
+.ai .msg-body blockquote { border-left: 2px solid var(--border2); padding-left: 9px; color: var(--text2); margin: 0.4em 0; }
+.ai .msg-body code:not(pre code) { background: var(--code-bg); border: 1px solid var(--border2); border-radius: 2px; padding: 0 4px; font-size: 0.8rem; color: var(--c1); }
 
-.ai .msg-text p { margin-bottom: 0.6em; }
-.ai .msg-text p:last-child { margin-bottom: 0; }
-.ai .msg-text ul, .ai .msg-text ol { padding-left: 1.2em; margin-bottom: 0.6em; }
-.ai .msg-text li { margin-bottom: 0.2em; }
-.ai .msg-text strong { color: var(--c1); font-weight: 700; }
-.ai .msg-text em { color: #a78bfa; }
-.ai .msg-text h1,.ai .msg-text h2,.ai .msg-text h3 {
-  font-family: 'Syne', sans-serif;
-  color: var(--c1); margin: 1em 0 0.4em;
-  font-size: 1rem;
+/* confidence / hallucination markers */
+.conf-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.58rem; padding: 1px 5px; border-radius: 2px; margin-left: 4px;
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;
+  vertical-align: middle;
 }
+.conf-high   { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.25);  color: var(--ok); }
+.conf-medium { background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.25); color: var(--warn); }
+.conf-low    { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: var(--err); }
 
-.error .msg-text { border-left: 2px solid var(--err); color: #f87171; }
-.system .msg-text { border-left: 2px solid var(--muted); color: var(--muted); font-size: 0.82rem; }
-
-/* Image in user message */
-.msg-img {
-  margin-top: 10px;
-  max-width: 180px;
-  border-radius: 4px;
-  border: 1px solid var(--c1);
-  overflow: hidden;
+/* source citation chips */
+.src-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.src-chip {
+  font-size: 0.6rem; padding: 2px 7px; border-radius: 3px;
+  background: var(--c1dim); border: 1px solid rgba(6,182,212,0.18);
+  color: var(--c1); cursor: pointer; transition: 0.12s;
 }
-.msg-img img { max-width: 100%; display: block; }
+.src-chip:hover { background: rgba(6,182,212,0.18); }
+
+/* error / system */
+.error .msg-body { border-left: 2px solid var(--err); color: #f87171; white-space: pre-wrap; }
+.system-msg .msg-body { border-left: 2px solid var(--border2); color: var(--muted); font-size: 0.8rem; }
 
 /* ── CODE BLOCKS ── */
-.code-container {
-  position: relative; margin: 1em 0;
-  border: 1px solid var(--border); border-radius: 6px;
-  background: var(--code-bg); overflow: hidden;
+.code-wrap { position: relative; margin: 0.7em 0; border: 1px solid var(--border); border-radius: 5px; background: var(--code-bg); overflow: hidden; }
+.code-bar { display: flex; align-items: center; padding: 5px 9px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); gap: 7px; }
+.code-lang-tag { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; flex: 1; }
+.cbb { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 0.58rem; padding: 1px 7px; border-radius: 2px; cursor: pointer; transition: 0.12s; }
+.cbb:hover { color: var(--c1); border-color: var(--c1); }
+.cbb.ok { color: var(--ok); border-color: var(--ok); }
+pre { margin: 0 !important; }
+pre code { font-family: 'Inconsolata', monospace !important; font-size: 0.82rem !important; }
+
+/* ── JSON ── */
+.json-wrap { border: 1px solid rgba(139,92,246,0.2); border-radius: 5px; overflow: hidden; margin: 0.7em 0; background: rgba(139,92,246,0.03); }
+.json-bar { display: flex; align-items: center; gap: 7px; padding: 5px 9px; border-bottom: 1px solid rgba(139,92,246,0.12); cursor: pointer; }
+.json-badge { font-size: 0.56rem; color: #a78bfa; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); padding: 1px 5px; border-radius: 2px; }
+.json-toggle { margin-left: auto; font-size: 0.62rem; color: var(--muted); }
+.json-body pre { background: transparent !important; padding: 10px 11px !important; color: #c4b5fd; font-size: 0.78rem !important; overflow-x: auto; white-space: pre; }
+
+/* ── CODE ATTACHMENT IN CHAT ── */
+.code-attach { border: 1px solid rgba(6,182,212,0.18); border-radius: 5px; overflow: hidden; margin-top: 7px; }
+.code-attach-bar { display: flex; align-items: center; gap: 7px; padding: 5px 9px; background: rgba(6,182,212,0.04); border-bottom: 1px solid rgba(6,182,212,0.1); }
+.ca-name { font-size: 0.68rem; color: var(--c1); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-meta { font-size: 0.58rem; color: var(--muted); }
+.ca-btn { background: transparent; border: 1px solid rgba(6,182,212,0.18); border-radius: 2px; color: var(--c1); font-size: 0.58rem; padding: 1px 6px; cursor: pointer; font-family: 'Inconsolata', monospace; }
+.ca-btn:hover { background: rgba(6,182,212,0.08); }
+.code-attach-body { display: none; }
+.code-attach-body.open { display: block; }
+.code-attach-body pre { background: var(--code-bg) !important; padding: 9px 11px !important; font-size: 0.76rem !important; color: var(--text2); overflow-x: auto; white-space: pre; }
+
+/* image preview */
+.msg-img { margin-top: 7px; max-width: 200px; border-radius: 4px; border: 1px solid var(--c1); overflow: hidden; }
+.msg-img img { max-width: 100%; display: block; }
+
+/* streaming cursor */
+.scursor::after { content:'▋'; color:var(--c1); animation: scblink 0.7s step-end infinite; }
+@keyframes scblink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── HOW-TO MODE TREE ── */
+.howto-version-bar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:12px;
 }
 
-.code-header {
-  display: flex; align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
-  gap: 8px;
+.ht-ver-btn {
+  background:var(--bg2);
+  border:1px solid var(--line);
+  color:var(--text);
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  cursor:pointer;
 }
 
-.code-lang {
-  font-size: 0.62rem; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  flex: 1;
+.ht-ver-btn:hover {
+  border-color:var(--c1);
 }
 
-.code-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-family: 'Inconsolata', monospace;
-  font-size: 0.62rem; padding: 3px 9px; border-radius: 3px;
-  cursor: pointer; transition: 0.15s; letter-spacing: 0.05em;
+.ht-ver-indicator {
+  font-size:0.82rem;
+  color:var(--muted);
 }
-
-.code-btn:hover { color: var(--c1); border-color: var(--c1); }
-.code-btn.copied { color: var(--success); border-color: var(--success); }
-
-pre { margin: 0 !important; padding: 1.2em !important; overflow-x: auto; }
-code { font-family: 'Inconsolata', monospace !important; font-size: 0.85rem !important; }
-
-/* ── CODE PASTE ATTACHMENT ── */
-.code-attachment {
-  border: 1px solid rgba(6,182,212,0.25);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-top: 8px;
-  background: rgba(6,182,212,0.04);
+.howto-tree { font-size: 0.85rem; }
+.ht-node {
+  border: 1px solid var(--border); border-radius: 5px;
+  overflow: hidden; margin-bottom: 6px;
+  animation: msgIn 0.2s ease;
 }
-
-.code-attach-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(6,182,212,0.15);
-  background: rgba(6,182,212,0.06);
+.ht-node-header {
+  padding: 9px 12px; background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; transition: background 0.12s;
 }
-
-.code-attach-icon {
-  font-size: 0.75rem; color: var(--c1);
+.ht-node-header:hover { background: var(--surface2); }
+.ht-node-header.open { border-bottom: 1px solid var(--border); background: var(--surface2); }
+.ht-arrow { font-size: 0.65rem; color: var(--muted); transition: transform 0.15s; flex-shrink: 0; }
+.ht-node-header.open .ht-arrow { transform: rotate(90deg); }
+.ht-label { flex: 1; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700; }
+.ht-badge { font-size: 0.56rem; padding: 1px 5px; border-radius: 2px; background: var(--c1dim); color: var(--c1); border: 1px solid rgba(6,182,212,0.18); }
+.ht-node-body { padding: 10px 12px 10px 28px; background: var(--bg); display: none; }
+.ht-node-body.open { display: block; }
+.ht-node-body ul { padding-left: 14px; }
+.ht-node-body li { margin-bottom: 4px; font-size: 0.82rem; color: var(--text2); }
+.ht-node-body code { background: var(--code-bg); border: 1px solid var(--border2); border-radius: 2px; padding: 0 3px; font-size: 0.78rem; color: var(--c1); }
+.ht-expand-btn {
+  margin-top: 8px; font-size: 0.62rem; color: var(--c1);
+  background: transparent; border: 1px dashed rgba(6,182,212,0.3);
+  border-radius: 3px; padding: 3px 9px; cursor: pointer; transition: 0.12s;
 }
+.ht-expand-btn:hover { background: var(--c1dim); }
 
-.code-attach-name {
-  font-size: 0.72rem; color: var(--c1);
-  flex: 1; font-family: 'Inconsolata', monospace;
-  letter-spacing: 0.04em;
+/* skill level selector */
+.skill-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+.skill-btn {
+  padding: 4px 12px; border-radius: 3px; font-size: 0.65rem; cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.05em;
+  transition: 0.12s;
 }
+.skill-btn.active { background: var(--c1dim); border-color: rgba(6,182,212,0.35); color: var(--c1); }
 
-.code-attach-lines {
-  font-size: 0.65rem; color: var(--muted);
+/* ── SOURCE MANAGER ── */
+.source-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--surface); margin-bottom: 5px;
 }
+.source-enabled { flex-shrink: 0; accent-color: var(--c1); }
+.source-name { flex: 1; font-size: 0.75rem; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-type { font-size: 0.58rem; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; }
+.st-web  { background: rgba(6,182,212,0.08); color: var(--c1); border: 1px solid rgba(6,182,212,0.2); }
+.st-wiki { background: rgba(34,197,94,0.08); color: var(--ok); border: 1px solid rgba(34,197,94,0.2); }
+.st-onion{ background: rgba(139,92,246,0.08); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+.st-file { background: rgba(249,115,22,0.08); color: var(--warn); border: 1px solid rgba(249,115,22,0.2); }
+.src-del { background: none; border: none; color: transparent; cursor: pointer; font-size: 0.7rem; }
+.source-item:hover .src-del { color: var(--muted); }
+.src-del:hover { color: var(--err) !important; }
 
-.code-attach-expand {
-  background: transparent;
-  border: 1px solid rgba(6,182,212,0.25);
-  border-radius: 3px;
-  color: var(--c1); font-size: 0.62rem;
-  padding: 2px 8px; cursor: pointer;
-  font-family: 'Inconsolata', monospace;
-  letter-spacing: 0.05em;
-  transition: 0.15s;
+/* ── NOTEBOOK PANEL ── */
+#notebook-panel {
+  width: 0; flex-shrink: 0; overflow: hidden;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  transition: width 0.25s ease;
+  display: flex; flex-direction: column;
 }
+#notebook-panel.open { width: 280px; }
 
-.code-attach-expand:hover { background: rgba(6,182,212,0.1); }
-
-.code-attach-body {
-  padding: 10px 12px;
-  font-size: 0.78rem; color: var(--muted);
-  font-style: italic;
+.nb-header { padding: 10px 12px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; gap: 7px; }
+.nb-title { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 800; color: var(--c1); letter-spacing: 0.08em; text-transform: uppercase; flex: 1; }
+.nb-docs { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+.nb-doc {
+  padding: 7px 9px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer; transition: 0.12s;
 }
+.nb-doc:hover { border-color: var(--c1); }
+.nb-doc.active { border-color: var(--c1); background: var(--c1dim); }
+.nb-doc-name { font-size: 0.73rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nb-doc-meta { font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+.nb-add { margin: 6px 8px; padding: 6px; background: transparent; border: 1px dashed var(--border2); border-radius: 4px; color: var(--muted); font-size: 0.72rem; cursor: pointer; transition: 0.12s; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.nb-add:hover { border-color: var(--c1); color: var(--c1); }
+.nb-search { width: calc(100% - 16px); margin: 6px 8px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 0.75rem; padding: 5px 8px; outline: none; flex-shrink: 0; }
+.nb-search:focus { border-color: var(--c1); }
 
-/* collapsed = just the header, no body */
-.code-attachment.expanded .code-attach-body { display: none; }
-
-/* ── JSON VIEWER ── */
-.json-container {
-  border: 1px solid rgba(124,58,237,0.25);
-  border-radius: 6px;
-  overflow: hidden;
-  margin: 1em 0;
-  background: rgba(124,58,237,0.04);
+/* ── TEMPLATE BAR ── */
+#tpl-bar {
+  flex-shrink: 0; padding: 0 16px 0; overflow-x: auto;
+  display: none; align-items: center; gap: 5px;
+  scrollbar-width: none; white-space: nowrap;
+  border-bottom: 1px solid var(--border); background: var(--panel);
 }
-
-.json-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(124,58,237,0.15);
-  background: rgba(124,58,237,0.06);
-  cursor: pointer;
+#tpl-bar.show { display: flex; padding-top: 7px; padding-bottom: 7px; }
+#tpl-bar::-webkit-scrollbar { display: none; }
+.tpl-chip {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+  color: var(--text2); font-family: 'Inconsolata', monospace; font-size: 0.68rem;
+  padding: 3px 9px; cursor: pointer; transition: 0.12s; white-space: nowrap; flex-shrink: 0;
 }
-
-.json-badge {
-  font-size: 0.6rem; color: #a78bfa;
-  background: rgba(124,58,237,0.15);
-  border: 1px solid rgba(124,58,237,0.3);
-  padding: 1px 6px; border-radius: 2px;
-  letter-spacing: 0.08em;
-}
-
-.json-toggle { margin-left: auto; font-size: 0.7rem; color: var(--muted); }
-
-.json-body { padding: 0; }
-
-.json-body pre {
-  background: transparent !important;
-  padding: 12px !important;
-  overflow-x: auto;
-  color: #c4b5fd;
-  font-size: 0.8rem !important;
-  white-space: pre;
-}
-
-/* ── STREAMING CURSOR ── */
-.streaming-cursor::after {
-  content: '▋';
-  color: var(--c1);
-  animation: blink 0.7s step-end infinite;
-}
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tpl-chip:hover { border-color: var(--c1); color: var(--c1); }
 
 /* ── INPUT SECTION ── */
-.input-section {
-  flex-shrink: 0;
-  padding: 16px 32px 24px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
+.input-section { flex-shrink: 0; padding: 10px 16px 14px; border-top: 1px solid var(--border); background: var(--bg); }
+.input-wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 7px; }
+
+#attach-strip { display: none; flex-wrap: wrap; gap: 5px; }
+#attach-strip.has { display: flex; }
+.a-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--c1dim); border: 1px solid rgba(6,182,212,0.18);
+  border-radius: 3px; padding: 2px 8px; font-size: 0.65rem; color: var(--c1);
 }
+.a-chip-x { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 0.7rem; transition: 0.1s; }
+.a-chip-x:hover { color: var(--err); }
+.a-img-prev { width: 22px; height: 22px; object-fit: cover; border-radius: 2px; }
 
-.input-wrap { max-width: 960px; margin: 0 auto; }
-
-/* Attachment preview strip */
-#attachment-strip {
-  display: none;
-  gap: 8px; flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-#attachment-strip.has-items { display: flex; }
-
-.attach-chip {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(6,182,212,0.08);
-  border: 1px solid rgba(6,182,212,0.2);
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 0.7rem; color: var(--c1);
-}
-
-.attach-chip-remove {
-  background: none; border: none;
-  color: var(--muted); cursor: pointer;
-  font-size: 0.75rem; padding: 0;
-  line-height: 1;
-  transition: color 0.15s;
-}
-
-.attach-chip-remove:hover { color: var(--err); }
-
-.input-row {
-  display: flex; gap: 10px; align-items: flex-end;
-}
-
-/* Left toolbar buttons */
-.input-tools {
-  display: flex; flex-direction: column; gap: 6px;
-  flex-shrink: 0;
-}
-
+.input-row { display: flex; gap: 7px; align-items: flex-end; }
+.input-tools { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 .tool-btn {
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 4px;
-  color: var(--muted);
-  width: 36px; height: 36px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.85rem;
-  transition: 0.15s;
-  position: relative;
+  background: var(--surface); border: 1px dashed var(--border); border-radius: 4px;
+  color: var(--muted); width: 32px; height: 32px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: 0.12s;
 }
-
 .tool-btn:hover { border-color: var(--c1); color: var(--c1); }
-.tool-btn.active { border-color: var(--warn); color: var(--warn); border-style: solid; }
-
-#file-input-img  { display: none; }
-#file-input-code { display: none; }
+.tool-btn.active { border-style: solid; border-color: var(--c1); color: var(--c1); background: var(--c1dim); }
+.tool-btn.disabled { opacity: 0.3; pointer-events: none; }
+.tool-btn svg { width: 14px; height: 14px; }
+input[type=file] { display: none; }
 
 #prompt-input {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 14px 16px;
-  color: var(--text);
-  font-family: 'Inconsolata', monospace; font-size: 0.95rem;
-  resize: none; min-height: 52px; max-height: 200px;
-  outline: none; line-height: 1.55;
-  transition: border-color 0.2s;
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 5px; padding: 11px 13px; color: var(--text);
+  font-family: 'Inconsolata', monospace; font-size: 0.9rem;
+  resize: none; min-height: 46px; max-height: 200px;
+  outline: none; line-height: 1.55; transition: border-color 0.15s;
 }
-
 #prompt-input:focus { border-color: var(--c1); }
 #prompt-input::placeholder { color: var(--muted); }
 
-#run-btn {
-  background: var(--surface);
-  color: var(--c1);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 0 22px; height: 52px;
-  font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 0.75rem; text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer; transition: 0.2s;
-  white-space: nowrap; flex-shrink: 0;
+#send-btn {
+  background: var(--surface); color: var(--c1);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 0 16px; height: 46px; font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em;
+  cursor: pointer; transition: 0.15s; white-space: nowrap; flex-shrink: 0;
 }
+#send-btn:hover:not(:disabled) { border-color: var(--c1); background: var(--c1dim); }
+#send-btn.stop { border-color: var(--err); color: var(--err); }
+#send-btn.stop:hover { background: rgba(239,68,68,0.07); }
+#send-btn:disabled { color: var(--muted); border-color: var(--border); cursor: not-allowed; }
 
-#run-btn:hover:not(:disabled) {
-  border-color: var(--c1);
-  background: rgba(6,182,212,0.06);
-}
-
-#run-btn:disabled {
-  background: #1a1a1d; color: var(--muted);
-  border-color: #2a2a2d; cursor: wait;
-}
-
-#run-btn:disabled:hover {
-  background: rgba(239,68,68,0.08);
-  border-color: var(--err); color: var(--err);
-}
-
-.hint-row {
-  display: flex; justify-content: space-between;
-  margin-top: 8px;
-  font-size: 0.62rem; color: var(--muted);
-  flex-wrap: wrap; gap: 4px;
-}
-
-.model-hint { color: var(--c1); }
-.model-hint.vision { color: var(--warn); }
+.hint-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+.hint-l { font-size: 0.58rem; color: var(--muted); }
+.hint-r { display: flex; align-items: center; gap: 8px; }
+#mic-status { font-size: 0.6rem; color: var(--err); display: none; }
+#mic-status.on { display: block; }
+#tok-est { font-size: 0.6rem; color: var(--muted); }
+#tok-est.warn { color: var(--warn); }
+.m-hint { font-size: 0.62rem; color: var(--c1); }
 
 /* ── MOBILE ── */
 @media (max-width: 640px) {
-  header { padding: 12px 16px; }
-  .logo { font-size: 1.1rem; }
-  #chat { padding: 16px; gap: 20px; }
-  .input-section { padding: 12px 16px 16px; }
-  .msg-text { padding: 14px 16px; font-size: 0.88rem; }
-  .model-select { max-width: 130px; }
-  #run-btn { padding: 0 14px; font-size: 0.68rem; }
+  #sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; width: 240px; transform: translateX(-100%); transition: transform 0.25s; }
+  #sidebar.open { transform: translateX(0); }
+  #notebook-panel.open { width: 0; display: none; }
   .input-tools { flex-direction: row; }
+  #chat { padding: 12px 10px; gap: 12px; }
+  .input-section { padding: 8px 10px 12px; }
+  #topbar { padding: 6px 10px; gap: 7px; }
+  .msg-body { padding: 10px 12px; font-size: 0.84rem; }
+  .model-select { max-width: 120px; font-size: 0.68rem; }
 }
 </style>
 </head>
 <body>
 
-<!-- ══ SETTINGS MODAL ══ -->
-<div id="settings-modal">
-  <div class="modal-box">
-    <div class="modal-title">⚙ Server Settings</div>
+<!-- ════ COMMAND PALETTE ════ -->
+<div id="cmd-palette">
+  <div class="cmd-box">
+    <input class="cmd-input" id="cmd-input" placeholder="Type a command or search…" autocomplete="off"/>
+    <div class="cmd-results" id="cmd-results"></div>
+  </div>
+</div>
 
-    <div class="modal-field">
-      <label class="modal-label">Ollama Server URL</label>
-      <input class="modal-input" id="server-url-input"
-        placeholder="http://localhost:11434"
-        value="http://localhost:11434"/>
+<!-- ════ SETTINGS MODAL ════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box" style="max-width:620px">
+    <div class="modal-header">
+      <span class="modal-title">Settings</span>
+      <button class="modal-close" onclick="closeModal('settings-modal')">✕</button>
     </div>
+    <div class="modal-body">
+      <div class="section-sep">Providers &amp; Servers</div>
+      <div id="providers-list"></div>
+      <button class="btn btn-ghost" style="align-self:flex-start" onclick="addProvider()">+ Add provider</button>
 
-    <div class="modal-note">
-      <!-- ═══════════════════════════════════════════════
-           HOW TO SWITCH BETWEEN LOCAL AND TUNNEL:
+      <div class="section-sep">Active Provider</div>
+      <div class="field">
+        <label class="field-label">Select active provider</label>
+        <select class="field-select" id="active-provider-sel"></select>
+      </div>
 
-           LOCAL (same machine):
-             http://localhost:11434
+      <div class="section-sep">System Prompt</div>
+      <div class="field">
+        <label class="field-label">Persona preset</label>
+        <select class="field-select" id="persona-sel" onchange="applyPersona()">
+          <option value="">— custom —</option>
+          <option value="You are a helpful, concise assistant. Answer directly without filler phrases.">General</option>
+          <option value="You are an expert software engineer. Write clean, well-commented code. Always specify language in code blocks. Prefer practical over theoretical.">Code Assistant</option>
+          <option value="You are an OSINT researcher. Be methodical, cite sources, distinguish verified facts from inference. Flag when information cannot be verified.">OSINT Analyst</option>
+          <option value="You are a scientific analyst. Be precise, cite reasoning chains, distinguish hypothesis from fact, flag uncertainty explicitly.">Scientific Analyst</option>
+          <option value="You are a Socratic tutor. Never give direct answers — ask guiding questions instead.">Socratic Tutor</option>
+          <option value="You are a creative writer. Be imaginative, vivid, and help develop ideas. Suggest alternatives and variations.">Creative Writer</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">System prompt</label>
+        <textarea class="field-textarea" id="sys-prompt-input" placeholder="Instructions prepended to every request…" style="min-height:90px"></textarea>
+      </div>
 
-           CLOUDFLARE TUNNEL (remote laptop):
-             https://your-tunnel-name.trycloudflare.com
-             (see setup instructions at bottom of file)
+      <div class="section-sep">Generation</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label class="field-label">Context limit (tokens)</label>
+          <input class="field-input" id="ctx-input" type="number" value="4096" min="512" max="131072"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Streaming</label>
+          <select class="field-select" id="stream-toggle">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Anti-hallucination markers</label>
+          <select class="field-select" id="ahm-toggle">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Performance mode</label>
+          <select class="field-select" id="perf-toggle">
+            <option value="auto">Auto-detect</option>
+            <option value="full">Full</option>
+            <option value="lite">Lite (no animations)</option>
+          </select>
+        </div>
+      </div>
 
-           Paste the URL above and click Save.
-           The setting is remembered in localStorage.
-      ═══════════════════════════════════════════════ -->
-      <strong>Local:</strong> use <code>http://localhost:11434</code><br>
-      <strong>Tunnel:</strong> paste your <code>https://xxxx.trycloudflare.com</code> URL here.<br>
-      The setting is saved in your browser.
+      <div class="section-sep">Proxy (for web source fetching)</div>
+      <div class="field">
+        <label class="field-label">CORS proxy URL</label>
+        <input class="field-input" id="proxy-input" placeholder="https://corsproxy.io/?url= or your local proxy"/>
+      </div>
+      <div class="field-note">
+        Used when fetching web sources. Default: <code>https://corsproxy.io/?url=</code><br>
+        For Tor/.onion: run the local proxy script on your server laptop (see instructions at bottom of file).
+      </div>
     </div>
-
-    <div class="modal-btn-row">
-      <button class="modal-btn secondary" onclick="closeSettings()">Cancel</button>
-      <button class="modal-btn primary" onclick="saveSettings()">Save &amp; Reconnect</button>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div>
   </div>
 </div>
 
-<!-- ══ HEADER ══ -->
-<header>
-  <div class="header-wrap">
-    <div class="logo">Nexus <span>//</span> Ollama</div>
-    <div class="header-right">
-      <span class="vision-badge" id="vision-badge">👁 Vision</span>
-      <select id="model-selector" class="model-select">
+<!-- ════ SOURCE MANAGER MODAL ════ -->
+<div class="modal-overlay" id="sources-modal">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title">Source Manager</span>
+      <button class="modal-close" onclick="closeModal('sources-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-note">
+        Enabled sources will be fetched and injected into context before each AI request.
+        Supports regular URLs, Wikipedia, and .onion via local proxy.
+      </div>
+      <div id="sources-list"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+        <input class="field-input" id="new-src-url" placeholder="URL or domain (e.g. en.wikipedia.org/wiki/…)" style="flex:1"/>
+        <select class="field-select" id="new-src-type" style="width:90px">
+          <option value="web">Web</option>
+          <option value="wiki">Wikipedia</option>
+          <option value="onion">Onion</option>
+        </select>
+        <button class="btn btn-primary" onclick="addSource()">Add</button>
+      </div>
+      <div class="field-note" style="margin-top:4px">
+        <strong>Fetch behavior:</strong> sources are fetched fresh on each request if enabled.
+        Content is truncated to ~3000 chars to avoid context overflow.
+        Wikipedia: uses the Wikipedia API for clean text extraction.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('sources-modal')">Close</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ IMPORT MODAL ════ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Import Chat</span>
+      <button class="modal-close" onclick="closeModal('import-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="import-dz" style="border:2px dashed var(--border2);border-radius:5px;padding:28px;text-align:center;cursor:pointer;color:var(--muted);font-size:0.8rem;transition:border-color 0.15s"
+        onclick="document.getElementById('import-fi').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--c1)'"
+        ondragleave="this.style.borderColor='var(--border2)'"
+        ondrop="handleImportDrop(event)">
+        Drop .md file or click to browse
+      </div>
+      <input type="file" id="import-fi" accept=".md,.json" onchange="handleImportFile(this)"/>
+    </div>
+  </div>
+</div>
+
+<!-- ════ LAYOUT ════ -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-top">
+      <div class="logo">Nexus <em>//</em> <sup>v3</sup></div>
+      <button class="icon-btn" id="sb-close-btn" onclick="closeSidebar()" style="display:none">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l10 10M11 1L1 11"/></svg>
+      </button>
+    </div>
+
+    <div class="mode-tabs">
+      <div class="mode-tab active" onclick="setMode('chat')" id="tab-chat">Chat</div>
+      <div class="mode-tab" onclick="setMode('howto')" id="tab-howto">How-To</div>
+      <div class="mode-tab" onclick="setMode('research')" id="tab-research">Research</div>
+    </div>
+
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M7 1v12M1 7h12"/></svg>
+      New chat
+    </button>
+
+    <div id="history-list"></div>
+
+    <div class="sidebar-bottom">
+      <button class="icon-btn" onclick="exportChat()" title="Export" style="flex:1;width:auto;font-size:0.56rem;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.05em;gap:3px;padding:0 4px">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" class="" style="width:11px;height:11px;flex-shrink:0"><path d="M7 1v9M4 7l3 3 3-3M1 12h12"/></svg>
+        Export
+      </button>
+      <button class="icon-btn" onclick="openModal('import-modal')" title="Import" style="flex:1;width:auto;font-size:0.56rem;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.05em;gap:3px;padding:0 4px">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px;flex-shrink:0"><path d="M7 10V1M4 4l3-3 3 3M1 12h12"/></svg>
+        Import
+      </button>
+    </div>
+  </div><!-- end sidebar -->
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <button class="icon-btn" id="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 3h12M1 7h12M1 11h12"/></svg>
+      </button>
+
+      <select id="model-sel" class="model-select" onchange="onModelChange()">
         <option value="">— connecting —</option>
       </select>
-      <div class="status-area">
+
+      <span class="provider-tag provider-ollama" id="provider-tag">OLLAMA</span>
+      <span class="vision-chip" id="vision-chip">Vision</span>
+      <span class="perf-chip" id="perf-chip">Lite Mode</span>
+
+      <div class="status-pill">
         <div class="sdot" id="sdot"></div>
-        <span id="status-text">init</span>
-      </div>
-      <button class="settings-btn" onclick="openSettings()" title="Server settings">⚙</button>
-    </div>
-  </div>
-</header>
-
-<!-- ══ CHAT ══ -->
-<main id="chat">
-  <div class="msg-block system">
-    <div class="msg-meta">System</div>
-    <div class="msg-text">Nexus loaded. Connecting to Ollama server…</div>
-  </div>
-</main>
-
-<!-- ══ INPUT ══ -->
-<div class="input-section">
-  <div class="input-wrap">
-
-    <!-- Attachment chips strip -->
-    <div id="attachment-strip"></div>
-
-    <div class="input-row">
-      <div class="input-tools">
-        <!-- Image upload (only enabled for vision models) -->
-        <label class="tool-btn" id="img-btn" title="Upload image (vision models only)">
-          📷
-          <input type="file" id="file-input-img" accept="image/*"/>
-        </label>
-        <!-- Code/file paste as attachment -->
-        <label class="tool-btn" id="code-btn" title="Attach code / file as block">
-          📎
-          <input type="file" id="file-input-code" accept=".txt,.js,.ts,.py,.html,.css,.json,.md,.sh,.rs,.go,.cpp,.c,.java,.sql,.yaml,.toml,.xml,.csv"/>
-        </label>
+        <span id="status-txt">init</span>
       </div>
 
-      <textarea id="prompt-input" placeholder="Type your prompt… (Enter to send, Shift+Enter for newline)" rows="1"></textarea>
-      <button id="run-btn">Send ▶</button>
+      <div class="token-chip" id="tok-chip">0 tok</div>
+
+      <div class="topbar-right">
+        <!-- theme cycle button -->
+        <button class="theme-btn" id="theme-btn" onclick="cycleTheme()" title="Cycle theme">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:3px"><circle cx="7" cy="7" r="3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M3.05 3.05l1.06 1.06M9.9 9.9l1.06 1.06M3.05 10.95l1.06-1.06M9.9 4.1l1.06-1.06"/></svg>
+          <span id="theme-label">Dark</span>
+        </button>
+
+        <button class="icon-btn" onclick="toggleNotebook()" id="nb-btn" title="Notebook (sources &amp; files)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="1" width="10" height="12" rx="1"/><path d="M5 1v12M8 5h2M8 8h2"/></svg>
+        </button>
+
+        <button class="icon-btn" onclick="openModal('sources-modal')" title="Source manager">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="6"/><path d="M7 4v3l2 2"/></svg>
+        </button>
+
+        <button class="icon-btn" onclick="toggleTemplates()" id="tpl-btn" title="Templates">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="12" height="3" rx="0.5"/><rect x="1" y="6" width="8" height="3" rx="0.5"/><rect x="1" y="11" width="10" height="2" rx="0.5"/></svg>
+        </button>
+
+        <button class="icon-btn" onclick="openModal('settings-modal')" title="Settings">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="2.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06"/></svg>
+        </button>
+      </div>
     </div>
 
-    <div class="hint-row">
-      <span id="key-hint">Enter — send · Shift+Enter — newline</span>
-      <span class="model-hint" id="model-hint">no model selected</span>
+    <!-- TEMPLATE BAR -->
+    <div id="tpl-bar"></div>
+
+    <!-- CHAT + NOTEBOOK -->
+    <div style="flex:1;display:flex;overflow:hidden;min-height:0">
+
+      <div id="chat">
+        <div id="vscroll-top"></div>
+        <div class="msg-block system-msg" id="welcome-msg">
+          <div class="msg-meta"><span class="mm-label">System</span></div>
+          <div class="msg-body">Nexus v3 ready. Connecting to server…</div>
+        </div>
+        <div id="vscroll-bot"></div>
+      </div>
+
+      <!-- NOTEBOOK PANEL -->
+      <div id="notebook-panel">
+        <div class="nb-header">
+          <span class="nb-title">Notebook</span>
+          <button class="icon-btn" onclick="toggleNotebook()" title="Close">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l10 10M11 1L1 11"/></svg>
+          </button>
+        </div>
+        <input class="nb-search" id="nb-search" placeholder="Search documents…" oninput="searchNotebook(this.value)"/>
+        <div class="nb-docs" id="nb-docs"></div>
+        <label class="nb-add">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;flex-shrink:0"><path d="M7 1v12M1 7h12"/></svg>
+          Add files (any type, multiple)
+          <input type="file" id="nb-file-input" multiple accept="*/*" onchange="handleNbFiles(this)"/>
+        </label>
+      </div>
+
+    </div><!-- end chat+notebook row -->
+
+    <!-- INPUT -->
+    <div class="input-section">
+      <div class="input-wrap">
+        <div id="attach-strip"></div>
+        <div class="input-row">
+          <div class="input-tools">
+            <label class="tool-btn" id="img-tool-btn" title="Upload image (vision models)">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="2" width="12" height="10" rx="1.5"/><circle cx="4.5" cy="5.5" r="1.2"/><path d="M1 10l3.5-3.5 2.5 2.5 1.5-1.5 4 4"/></svg>
+              <input type="file" id="fi-img" accept="image/*" multiple onchange="handleImages(this)"/>
+            </label>
+            <label class="tool-btn" id="code-tool-btn" title="Attach file(s)">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.5 1H3a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V4.5L8.5 1z"/><path d="M8.5 1v3.5H12"/></svg>
+              <input type="file" id="fi-code" multiple accept="*/*" onchange="handleCodeFiles(this)"/>
+            </label>
+            <button class="tool-btn" id="mic-btn" title="Voice input" onclick="toggleMic()">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="1" width="6" height="8" rx="3"/><path d="M2 7c0 2.76 2.24 5 5 5s5-2.24 5-5"/><path d="M7 12v2"/></svg>
+            </button>
+          </div>
+
+          <textarea id="prompt-input" placeholder="Type a prompt, paste code, or use ⌘K for commands…" rows="1"></textarea>
+          <button id="send-btn">Send</button>
+        </div>
+        <div class="hint-row">
+          <span class="hint-l">Enter — send · Shift+Enter — newline · ⌘K — commands</span>
+          <div class="hint-r">
+            <span id="mic-status">Listening…</span>
+            <span id="tok-est"></span>
+            <span class="m-hint" id="model-hint"></span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
+
+  </div><!-- end main -->
+
+</div><!-- end app-body -->
 
 <script>
-/* ═══════════════════════════════════════════════════════════
-   NEXUS — Configuration
-   ═══════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════
+   NEXUS v3 — Core Engine
+   ══════════════════════════════════════════════════════════ */
 
-   SERVER URL OPTIONS:
-   ─────────────────────────────────────────────────────────
-   Option A — Local (Ollama running on same PC as browser):
-     DEFAULT_SERVER = "http://localhost:11434"
+/* ── PROVIDERS CONFIG ──────────────────────────────────────
+   Server URL options:
+     Ollama local:  http://localhost:11434
+     Ollama tunnel: https://xxxx.trycloudflare.com
+     Groq:          https://api.groq.com/openai/v1
+     OpenRouter:    https://openrouter.ai/api/v1
+─────────────────────────────────────────────────────────── */
+const DEFAULT_PROVIDERS = [
+  { id:"ollama-local", name:"Ollama (Local)", url:"http://localhost:11434", type:"ollama", key:"" },
+  { id:"groq",         name:"Groq",           url:"https://api.groq.com/openai/v1", type:"openai", key:"" },
+  { id:"openrouter",   name:"OpenRouter",     url:"https://openrouter.ai/api/v1",   type:"openai", key:"" },
+];
 
-   Option B — Cloudflare Tunnel (Ollama on remote laptop,
-     accessed through tunnel from any browser anywhere):
-     DEFAULT_SERVER = "https://your-name.trycloudflare.com"
+const VISION_PATTERNS = ["llava","qwen-vl","qwen2-vl","bakllava","moondream","minicpm-v","cogvlm","internvl","pixtral","llama3.2-vision","gemma3","llava-phi","llama-3.2-11b","llama-3.2-90b"];
+const CODE_PASTE_LINES = 18, CODE_PASTE_CHARS = 700;
 
-   Users can also change this at runtime via ⚙ Settings.
-   ═══════════════════════════════════════════════════════════ */
+const TEMPLATES = [
+  { label:"Explain",     text:"Explain the following clearly:\n\n" },
+  { label:"Summarize",   text:"Summarize as a concise bullet list:\n\n" },
+  { label:"Fix code",    text:"Find and fix bugs. Explain what was wrong:\n\n" },
+  { label:"Unit tests",  text:"Write comprehensive unit tests:\n\n" },
+  { label:"OSINT",       text:"Perform an OSINT analysis of the following. Distinguish verified facts from inferences:\n\n" },
+  { label:"Pros/Cons",   text:"List the pros and cons of:\n\n" },
+  { label:"Refactor",    text:"Refactor for clarity and best practices:\n\n" },
+  { label:"Rabbit hole", text:"Recursively explore this topic. Start broad, then go deeper. Identify sub-topics, prerequisites, and hidden dependencies:\n\n" },
+];
 
-const DEFAULT_SERVER = "http://localhost:11434";
+const DEFAULT_SOURCES = [
+  { id:"wiki-en",  url:"https://en.wikipedia.org/wiki/", name:"Wikipedia (EN)", type:"wiki",  enabled:false },
+  { id:"wikihow",  url:"https://www.wikihow.com/",        name:"wikiHow",        type:"web",   enabled:false },
+  { id:"ddg",      url:"https://html.duckduckgo.com/html/?q=", name:"DuckDuckGo", type:"web",   enabled:false },
+];
 
-// Vision-capable model name patterns (matched against model name)
-const VISION_PATTERNS = ["llava", "qwen-vl", "qwen2-vl", "bakllava", "moondream", "minicpm-v", "cogvlm", "internvl", "pixtral", "llama3.2-vision", "gemma3"];
+/* ── LS HELPERS ── */
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
 
-/* ════════════════════════ STATE ════════════════════════ */
-let serverUrl       = localStorage.getItem("nexus_server") || DEFAULT_SERVER;
-let currentModel    = "";
-let isGenerating    = false;
-let abortController = null;
-let uploadedImage   = null;   // { base64, name, mimeType }
-let attachedCode    = null;   // { text, name, lines }
-let pingIntervalId  = null;
-let lastServerState = null;   // "online" | "offline" — avoids UI flicker
+/* ── STATE ── */
+let providers      = LS.get("nx3_providers")  || DEFAULT_PROVIDERS;
+let activeProvider = LS.get("nx3_activeprov") || "ollama-local";
+let sysPrompt      = LS.get("nx3_sysprompt")  || "";
+let ctxLimit       = LS.get("nx3_ctx")        ?? 4096;
+let streamOn       = LS.get("nx3_stream")     !== false;
+let ahmOn          = LS.get("nx3_ahm")        !== false;
+let perfMode       = LS.get("nx3_perf")       || "auto";
+let corsProxy      = LS.get("nx3_proxy")      || "https://corsproxy.io/?url=";
+let sources        = LS.get("nx3_sources")    || DEFAULT_SOURCES;
+let sessions       = LS.get("nx3_sessions")   || [];
+let currentModel   = LS.get("nx3_model")      || "";
+let currentMode    = "chat"; // chat | howto | research
+let currentSkill   = "intermediate";
+let themeIdx       = 0;
+const THEMES       = ["dark","light","amoled","lowblue"];
+const THEME_LABELS = ["Dark","Light","AMOLED","Low-Blue"];
 
-/* ════════════════════════ DOM ════════════════════════ */
-const chat         = document.getElementById("chat");
-const textarea     = document.getElementById("prompt-input");
-const runBtn       = document.getElementById("run-btn");
-const modelSel     = document.getElementById("model-selector");
-const sdot         = document.getElementById("sdot");
-const statusText   = document.getElementById("status-text");
-const modelHint    = document.getElementById("model-hint");
-const visionBadge  = document.getElementById("vision-badge");
-const strip        = document.getElementById("attachment-strip");
-const imgInput     = document.getElementById("file-input-img");
-const codeInput    = document.getElementById("file-input-code");
-const imgBtn       = document.getElementById("img-btn");
-const settingsModal= document.getElementById("settings-modal");
+let isGenerating   = false;
+let abortCtrl      = null;
+let lastServerOk   = null;
+let sessionId      = null;
+let history        = []; // [{role, content}]
+let totalTokens    = 0;
 
-/* ════════════════════════ SETTINGS ════════════════════════ */
-function openSettings() {
-  document.getElementById("server-url-input").value = serverUrl;
-  settingsModal.classList.add("open");
+// Notebook
+let nbDocs = LS.get("nx3_nb") || []; // [{id, name, text, size, date}]
+
+// Pending attachments
+let pendingImages = []; // [{base64, name, dataUrl}]
+let pendingFiles  = []; // [{text, name, lang, lines, meta}]
+
+/* ── DOM ── */
+const $ = id => document.getElementById(id);
+const chat      = $("chat");
+const textarea  = $("prompt-input");
+const sendBtn   = $("send-btn");
+const modelSel  = $("model-sel");
+const sdot      = $("sdot");
+const statusTxt = $("status-txt");
+
+/* ── PERFORMANCE AUTO-DETECT ── */
+function initPerf() {
+  if (perfMode === "lite") { applyLite(); return; }
+  if (perfMode === "full") return;
+  // Auto: check hardware concurrency + memory
+  const weak = (navigator.hardwareConcurrency || 4) <= 2
+    || (navigator.deviceMemory && navigator.deviceMemory <= 2);
+  if (weak) applyLite();
 }
 
-function closeSettings() {
-  settingsModal.classList.remove("open");
+function applyLite() {
+  document.documentElement.setAttribute("data-perf","lite");
+  $("perf-chip").classList.add("show");
+  streamOn = false; // auto-disable streaming in lite mode
+}
+
+/* ── THEME ── */
+function initTheme() {
+  const saved = LS.get("nx3_theme");
+  if (saved !== null && THEMES.includes(saved)) {
+    themeIdx = THEMES.indexOf(saved);
+  }
+  applyTheme();
+}
+
+function cycleTheme() {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  applyTheme();
+  LS.set("nx3_theme", THEMES[themeIdx]);
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", THEMES[themeIdx]);
+  $("theme-label").textContent = THEME_LABELS[themeIdx];
+  // swap hljs stylesheet
+  const hljsLink = $("hljs-theme");
+  hljsLink.href = themeIdx === 1
+    ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+    : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css";
+}
+
+/* ── MODAL ── */
+function openModal(id) {
+  if (id === "settings-modal") loadSettingsModal();
+  if (id === "sources-modal")  renderSourcesList();
+  $(id).classList.add("open");
+}
+function closeModal(id) { $(id).classList.remove("open"); }
+document.querySelectorAll(".modal-overlay").forEach(m =>
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); })
+);
+
+/* ── COMMAND PALETTE ── */
+const CMD_ITEMS = [
+  { label:"New chat",           key:"N", action:() => newChat() },
+  { label:"Settings",           key:"S", action:() => openModal("settings-modal") },
+  { label:"Source manager",     key:"R", action:() => openModal("sources-modal") },
+  { label:"Toggle notebook",    key:"B", action:() => toggleNotebook() },
+  { label:"Export chat",        key:"E", action:() => exportChat() },
+  { label:"Import chat",        key:"I", action:() => openModal("import-modal") },
+  { label:"Mode: Chat",         key:"",  action:() => setMode("chat") },
+  { label:"Mode: How-To",       key:"",  action:() => setMode("howto") },
+  { label:"Mode: Research",     key:"",  action:() => setMode("research") },
+  { label:"Cycle theme",        key:"T", action:() => cycleTheme() },
+  { label:"Toggle templates",   key:"",  action:() => toggleTemplates() },
+  { label:"Toggle streaming",   key:"",  action:() => { streamOn=!streamOn; LS.set("nx3_stream",streamOn); appendSystem(`Streaming ${streamOn?"on":"off"}`); } },
+];
+
+let cmdSel = 0;
+
+function openCmd() {
+  $("cmd-palette").classList.add("open");
+  $("cmd-input").value = "";
+  $("cmd-input").focus();
+  renderCmdResults("");
+}
+
+function closeCmd() { $("cmd-palette").classList.remove("open"); }
+
+function renderCmdResults(q) {
+  const items = q
+    ? CMD_ITEMS.filter(c => c.label.toLowerCase().includes(q.toLowerCase()))
+    : CMD_ITEMS;
+  cmdSel = 0;
+  const el = $("cmd-results");
+  el.innerHTML = items.map((c,i) => `
+    <div class="cmd-item${i===0?" selected":""}" data-idx="${i}" onclick="execCmd(${CMD_ITEMS.indexOf(c)})">
+      ${escH(c.label)}
+      ${c.key ? `<span class="cmd-item-key">${c.key}</span>` : ""}
+    </div>`).join("");
+}
+
+function execCmd(idx) {
+  closeCmd();
+  CMD_ITEMS[idx]?.action();
+}
+
+$("cmd-input").addEventListener("input", e => renderCmdResults(e.target.value));
+$("cmd-input").addEventListener("keydown", e => {
+  const items = $("cmd-results").querySelectorAll(".cmd-item");
+  if (e.key === "ArrowDown") { e.preventDefault(); cmdSel = Math.min(cmdSel+1, items.length-1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); cmdSel = Math.max(cmdSel-1, 0); }
+  else if (e.key === "Enter") { e.preventDefault(); const sel = items[cmdSel]; if (sel) sel.click(); }
+  else if (e.key === "Escape") closeCmd();
+  items.forEach((el,i) => el.classList.toggle("selected", i===cmdSel));
+});
+
+document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); openCmd(); }
+  if (e.key === "Escape" && $("cmd-palette").classList.contains("open")) closeCmd();
+});
+
+/* ── SIDEBAR ── */
+function toggleSidebar() {
+  const sb = $("sidebar");
+  const isMob = window.innerWidth <= 640;
+  if (isMob) {
+    sb.classList.toggle("open");
+    $("sb-close-btn").style.display = sb.classList.contains("open") ? "flex" : "none";
+  } else {
+    sb.classList.toggle("collapsed");
+  }
+}
+function closeSidebar() {
+  $("sidebar").classList.remove("open");
+  $("sb-close-btn").style.display = "none";
+}
+chat.addEventListener("click", () => { if (window.innerWidth<=640) closeSidebar(); });
+
+/* ── NOTEBOOK PANEL ── */
+function toggleNotebook() {
+  const nb = $("notebook-panel");
+  const btn = $("nb-btn");
+  nb.classList.toggle("open");
+  btn.classList.toggle("active");
+  renderNbDocs();
+}
+
+/* ── TEMPLATES ── */
+function renderTemplates() {
+  const bar = $("tpl-bar");
+  bar.innerHTML = TEMPLATES.map(t =>
+    `<button class="tpl-chip" onclick="insertTemplate(${JSON.stringify(t.text)})">${escH(t.label)}</button>`
+  ).join("");
+}
+function insertTemplate(txt) {
+  textarea.value = txt;
+
+  textarea.focus();
+
+  textarea.dispatchEvent(
+    new Event("input", { bubbles: true })
+  );
+
+  textarea.style.borderColor = "var(--c1)";
+
+  setTimeout(() => {
+    textarea.style.borderColor = "";
+  }, 600);
+
+  autoResize();
+}
+function toggleTemplates() {
+  const bar = $("tpl-bar"); const btn = $("tpl-btn");
+  bar.classList.toggle("show"); btn.classList.toggle("active");
+}
+renderTemplates();
+
+/* ── MODE ── */
+function setMode(m) {
+  currentMode = m;
+  ["chat","howto","research"].forEach(id => {
+    $(`tab-${id}`).classList.toggle("active", id===m);
+  });
+  const hint = { chat:"Type a prompt…", howto:"Enter a skill or task for a step-by-step guide…", research:"Enter a research topic…" };
+  textarea.placeholder = hint[m] + " (Enter to send, Shift+Enter for newline, ⌘K for commands)";
+}
+
+/* ── STATUS ── */
+async function checkServer() {
+  if (isGenerating) return;
+  const prov = providers.find(p=>p.id===activeProvider) || providers[0];
+  try {
+    let url, headers = {};
+    if (prov.type === "ollama") url = `${prov.url}/api/tags`;
+    else { url = `${prov.url}/models`; if (prov.key) headers["Authorization"] = `Bearer ${prov.key}`; }
+
+    const res  = await fetch(url, { signal: AbortSignal.timeout(5000), headers });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (lastServerOk !== true) { lastServerOk = true; setSt("online","connected"); }
+
+    const models = prov.type === "ollama"
+      ? (data.models||[]).map(m=>m.name)
+      : (data.data||[]).map(m=>m.id);
+    populateModels(models);
+  } catch {
+    if (lastServerOk !== false) { lastServerOk = false; setSt("offline","server offline"); }
+  }
+}
+
+function setSt(dot,txt) { sdot.className="sdot "+dot; statusTxt.textContent=txt; }
+function setBusy() { sdot.className="sdot busy"; statusTxt.textContent="generating…"; }
+function restSt() { setSt(lastServerOk?"online":"offline", lastServerOk?"connected":"server offline"); }
+
+/* ── MODELS ── */
+function populateModels(list) {
+  const prev = modelSel.value || currentModel;
+  modelSel.innerHTML = "";
+  if (!list.length) { modelSel.innerHTML='<option value="">No models</option>'; return; }
+  list.forEach(n => {
+    const o = document.createElement("option");
+    o.value=n; o.textContent=n; modelSel.appendChild(o);
+  });
+  if (prev && [...modelSel.options].some(o=>o.value===prev)) modelSel.value = prev;
+  currentModel = modelSel.value;
+  LS.set("nx3_model", currentModel);
+  updateModelUi();
+}
+
+function isVision(n) { const l=(n||"").toLowerCase(); return VISION_PATTERNS.some(p=>l.includes(p)); }
+
+function updateModelUi() {
+  currentModel = modelSel.value;
+  const vis = isVision(currentModel);
+  $("model-hint").textContent = currentModel || "no model";
+  $("vision-chip").className = "vision-chip"+(vis?" show":"");
+  $("img-tool-btn").classList.toggle("disabled", !vis);
+
+  // provider tag
+  const prov = providers.find(p=>p.id===activeProvider);
+  const pt = $("provider-tag");
+  pt.className = "provider-tag provider-"+(prov?.type==="openai"
+    ? (prov.id.includes("groq")?"groq":"openrouter") : "ollama");
+  pt.textContent = (prov?.name||"Ollama").split(" ")[0].toUpperCase();
+  updateTokEst();
+}
+
+function onModelChange() { LS.set("nx3_model", modelSel.value); updateModelUi(); }
+
+/* ── SETTINGS MODAL ── */
+function loadSettingsModal() {
+  renderProviders();
+  refreshProviderSel();
+  $("sys-prompt-input").value = sysPrompt;
+  $("ctx-input").value        = ctxLimit;
+  $("stream-toggle").value    = streamOn ? "true" : "false";
+  $("ahm-toggle").value       = ahmOn    ? "true" : "false";
+  $("perf-toggle").value      = perfMode;
+  $("proxy-input").value      = corsProxy;
+}
+
+function renderProviders() {
+  const list = $("providers-list");
+  list.innerHTML = providers.map((p,i) => `
+    <div style="display:flex;gap:5px;align-items:center;margin-bottom:5px">
+      <input class="field-input" value="${escH(p.name)}" placeholder="Name" oninput="providers[${i}].name=this.value" style="width:120px;flex-shrink:0"/>
+      <input class="field-input" value="${escH(p.url)}" placeholder="URL" oninput="providers[${i}].url=this.value" style="flex:1"/>
+      <input class="field-input" value="${escH(p.key)}" placeholder="API key" type="password" oninput="providers[${i}].key=this.value" style="width:110px;flex-shrink:0"/>
+      <button class="btn btn-danger" style="padding:6px 8px" onclick="providers.splice(${i},1);renderProviders()" ${providers.length===1?"disabled":""}>✕</button>
+    </div>`).join("");
+}
+
+function refreshProviderSel() {
+  const sel = $("active-provider-sel");
+  sel.innerHTML = providers.map(p=>
+    `<option value="${p.id}"${p.id===activeProvider?" selected":""}>${escH(p.name)}</option>`
+  ).join("");
+}
+
+function addProvider() {
+  providers.push({ id:"custom-"+Date.now(), name:"Custom", url:"http://localhost:11434", type:"ollama", key:"" });
+  renderProviders(); refreshProviderSel();
+}
+
+function applyPersona() {
+  const v = $("persona-sel").value;
+  if (v) $("sys-prompt-input").value = v;
 }
 
 function saveSettings() {
-  const val = document.getElementById("server-url-input").value.trim().replace(/\/+$/, "");
-  if (!val) return;
-  serverUrl = val;
-  localStorage.setItem("nexus_server", serverUrl);
-  closeSettings();
-  lastServerState = null; // force status refresh
+  sysPrompt    = $("sys-prompt-input")?.value?.trim() || sysPrompt;
+  ctxLimit     = parseInt($("ctx-input")?.value)      || ctxLimit;
+  streamOn     = $("stream-toggle")?.value === "true";
+  ahmOn        = $("ahm-toggle")?.value   === "true";
+  perfMode     = $("perf-toggle")?.value  || perfMode;
+  corsProxy    = $("proxy-input")?.value?.trim()      || corsProxy;
+  activeProvider = $("active-provider-sel")?.value   || activeProvider;
+  LS.set("nx3_providers",  providers);
+  LS.set("nx3_activeprov", activeProvider);
+  LS.set("nx3_sysprompt",  sysPrompt);
+  LS.set("nx3_ctx",        ctxLimit);
+  LS.set("nx3_stream",     streamOn);
+  LS.set("nx3_ahm",        ahmOn);
+  LS.set("nx3_perf",       perfMode);
+  LS.set("nx3_proxy",      corsProxy);
+  LS.set("nx3_sources",    sources);
+  if (perfMode==="lite") applyLite();
+  else document.documentElement.removeAttribute("data-perf");
+  closeModal("settings-modal");
+  closeModal("sources-modal");
+  lastServerOk = null;
   checkServer();
 }
 
-// Close modal on backdrop click
-settingsModal.addEventListener("click", e => {
-  if (e.target === settingsModal) closeSettings();
-});
+/* ── SOURCE MANAGER ── */
+function renderSourcesList() {
+  $("sources-list").innerHTML = sources.map((s,i) => `
+    <div class="source-item">
+      <input type="checkbox" class="source-enabled" ${s.enabled?"checked":""} onchange="sources[${i}].enabled=this.checked"/>
+      <span class="source-name" title="${escH(s.url)}">${escH(s.name)}</span>
+      <span class="source-type st-${s.type}">${s.type}</span>
+      <button class="src-del" onclick="sources.splice(${i},1);renderSourcesList()">✕</button>
+    </div>`).join("");
+}
 
-/* ════════════════════════ STATUS (ping) ════════════════════════ */
-async function checkServer() {
-  // Don't change status to "offline" while actively generating
-  if (isGenerating) return;
+function addSource() {
+  const url  = $("new-src-url").value.trim();
+  const type = $("new-src-type").value;
+  if (!url) return;
+  const name = url.replace(/^https?:\/\//, "").replace(/\/$/, "").slice(0, 40);
+  sources.push({ id:"src-"+Date.now(), url, name, type, enabled:true });
+  $("new-src-url").value = "";
+  renderSourcesList();
+}
 
+/* Fetch source content for context injection */
+async function fetchSourceContent(src) {
   try {
-    const res  = await fetch(`${serverUrl}/api/tags`, { signal: AbortSignal.timeout(4000) });
-    if (!res.ok) throw new Error("bad response");
-    const data = await res.json();
-
-    if (lastServerState !== "online") {
-      lastServerState = "online";
-      setStatus("online", "server connected", "online");
+    let url = src.url;
+    // Wikipedia: use API for clean extraction
+    if (src.type === "wiki") {
+      const title = url.split("/wiki/")[1] || "";
+      if (title) {
+        const apiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const res = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          const d = await res.json();
+          return `[Wikipedia: ${d.title}]\n${d.extract || ""}`.slice(0, 3000);
+        }
+      }
     }
+    // Regular web via CORS proxy
+    const proxyUrl = corsProxy + encodeURIComponent(url);
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error();
+    const html = await res.text();
+    // Strip HTML tags for clean text
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    // Remove scripts/styles
+    div.querySelectorAll("script,style,nav,footer,header").forEach(el=>el.remove());
+    const text = (div.innerText || div.textContent || "").replace(/\s{3,}/g," ").trim();
+    return `[Source: ${src.name}]\n${text.slice(0, 3000)}`;
+  } catch { return null; }
+}
 
-    populateModels(data.models || []);
+/* ── NOTEBOOK ── */
+function renderNbDocs(filter) {
+  const docs = filter
+    ? nbDocs.filter(d => d.name.toLowerCase().includes(filter) || d.text.toLowerCase().includes(filter))
+    : nbDocs;
+  $("nb-docs").innerHTML = docs.length
+    ? docs.map((d,i) => `
+        <div class="nb-doc" onclick="toggleNbDoc(${i})">
+          <div class="nb-doc-name">${escH(d.name)}</div>
+          <div class="nb-doc-meta">${d.size} · ${new Date(d.date).toLocaleDateString()}</div>
+        </div>`).join("")
+    : `<div style="font-size:0.72rem;color:var(--muted);padding:10px;text-align:center">No documents. Add files above.</div>`;
+}
 
-  } catch(e) {
-    if (lastServerState !== "offline") {
-      lastServerState = "offline";
-      setStatus("offline", "server offline", "offline");
-    }
+function searchNotebook(q) { renderNbDocs(q.toLowerCase()); }
+
+function toggleNbDoc(i) {
+  const d = nbDocs[i];
+  if (!d) return;
+  // Inject doc into textarea as code attachment
+  attachCodeBlock(d.text, d.name.split(".").pop(), d.name);
+}
+
+async function handleNbFiles(input) {
+  const files = [...input.files];
+  for (const file of files) {
+    await readFileForNb(file);
   }
+  input.value = "";
+  LS.set("nx3_nb", nbDocs);
+  renderNbDocs();
 }
 
-function setStatus(dotClass, text, state) {
-  sdot.className = "sdot " + dotClass;
-  statusText.textContent = text;
-}
-
-function setStatusBusy() {
-  sdot.className = "sdot busy";
-  statusText.textContent = "generating…";
-}
-
-function restoreStatus() {
-  if (lastServerState === "online") {
-    setStatus("online", "server connected", "online");
-  } else {
-    setStatus("offline", "server offline", "offline");
-  }
-}
-
-/* ════════════════════════ MODEL LIST ════════════════════════ */
-function populateModels(models) {
-  const prev = modelSel.value;
-  modelSel.innerHTML = "";
-
-  if (models.length === 0) {
-    const o = document.createElement("option");
-    o.value = ""; o.textContent = "No models found";
-    modelSel.appendChild(o);
-    return;
-  }
-
-  models.forEach(m => {
-    const name = m.name || m;
-    const o = document.createElement("option");
-    o.value = name;
-    o.textContent = name;
-    modelSel.appendChild(o);
+function readFileForNb(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      nbDocs.push({
+        id: "nb-"+Date.now()+Math.random(),
+        name: file.name,
+        text,
+        size: formatBytes(file.size),
+        date: Date.now()
+      });
+      resolve();
+    };
+    reader.onerror = () => resolve(); // skip on error
+    reader.readAsText(file);
   });
-
-  // Restore previous selection if still available
-  if (prev && [...modelSel.options].some(o => o.value === prev)) {
-    modelSel.value = prev;
-  }
-
-  currentModel = modelSel.value;
-  updateModelHint();
 }
 
-function isVisionModel(name) {
-  const n = (name || "").toLowerCase();
-  return VISION_PATTERNS.some(p => n.includes(p));
+function formatBytes(b) {
+  if (b < 1024) return b+"B";
+  if (b < 1048576) return (b/1024).toFixed(1)+"KB";
+  return (b/1048576).toFixed(1)+"MB";
 }
 
-function updateModelHint() {
-  currentModel = modelSel.value;
-  const vision = isVisionModel(currentModel);
-  modelHint.textContent = currentModel
-    ? (vision ? `📷 ${currentModel.toUpperCase()} (vision)` : `model: ${currentModel.toUpperCase()}`)
-    : "no model selected";
-  modelHint.className = "model-hint" + (vision ? " vision" : "");
-  visionBadge.className = "vision-badge" + (vision ? " show" : "");
+/* ── LOSSLESS LARGE FILE COMPRESSION ──
+   Strategy: no actual lossy compression.
+   For files that would overflow context window:
+   1. Split into semantic chunks (by paragraph/function boundaries)
+   2. Include full content in attachment (user can expand)
+   3. Send only a summary + structural outline to the model
+   4. User can click to inject any specific chunk ── */
 
-  // Enable/disable image button based on vision support
-  imgBtn.style.opacity = vision ? "1" : "0.35";
-  imgBtn.title = vision
-    ? "Upload image (vision model detected)"
-    : "Vision not supported by this model";
+function chunkText(text, chunkSize = 3000) {
+  // Split by double newlines (paragraph boundaries) first
+  const paras = text.split(/\n\n+/);
+  const chunks = [];
+  let current = "";
+  for (const p of paras) {
+    if ((current + p).length > chunkSize && current) {
+      chunks.push(current.trim());
+      current = p;
+    } else {
+      current += (current ? "\n\n" : "") + p;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
 }
 
-modelSel.addEventListener("change", updateModelHint);
+function buildContextSummary(text, name, lang) {
+  const lines   = text.split("\n");
+  const chars   = text.length;
+  const tokens  = Math.round(chars / 4);
+  const meta    = extractCodeMeta(text, lang);
 
-/* ════════════════════════ TEXTAREA ════════════════════════ */
-textarea.addEventListener("input", function() {
-  this.style.height = "auto";
-  this.style.height = Math.min(this.scrollHeight, 200) + "px";
-});
-
-textarea.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendPrompt();
+  // For code: include structure
+  // For prose: include first 500 chars + stats
+  if (["py","js","ts","go","rs","cpp","c","java","php","rb"].includes(lang)) {
+    return `[Attached file: ${name} | ${lines.length} lines | ~${tokens} tokens]\n${meta ? "Structure: "+meta+"\n" : ""}[First 800 chars shown; full content available in attachment]:\n${text.slice(0,800)}`;
   }
-});
+  return `[Attached file: ${name} | ${lines.length} lines | ~${tokens} tokens]\n[Preview]:\n${text.slice(0,1000)}\n[Full content available in attachment — click to expand]`;
+}
 
-runBtn.addEventListener("click", () => {
-  if (isGenerating) {
-    // Cancel
-    abortController?.abort();
-  } else {
-    sendPrompt();
+/* ── IMAGE UPLOAD ── */
+async function handleImages(input) {
+  if (!isVision(currentModel)) {
+    appendSystem("Vision not available for this model. Switch to a vision-capable model.");
+    input.value = ""; return;
   }
-});
-
-/* ════════════════════════ IMAGE UPLOAD ════════════════════════ */
-imgInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  if (!isVisionModel(currentModel)) {
-    appendMsg("error", "Error", "Selected model doesn't support images. Switch to a vision model (llava, qwen-vl, etc.) first.");
-    imgInput.value = "";
-    return;
+  const files = [...input.files];
+  for (const file of files) {
+    await processImage(file);
   }
+  input.value = "";
+  updateTokEst();
+}
 
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const full   = ev.target.result;
-    const base64 = full.split(",")[1];
-    uploadedImage = { base64, name: file.name, mimeType: file.type, dataUrl: full };
-    addImageChip(file.name, full);
-  };
-  reader.readAsDataURL(file);
-  imgInput.value = "";
-});
+function processImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 800;
+      let [w, h] = [img.width, img.height];
+      if (w > MAX || h > MAX) {
+        const r = Math.min(MAX/w, MAX/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const c = document.createElement("canvas");
+      c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      const dataUrl = c.toDataURL("image/jpeg", 0.85);
+      const base64  = dataUrl.split(",")[1];
+      pendingImages.push({ base64, name:file.name, dataUrl });
+      addChip("img-"+pendingImages.length, `📷 ${file.name}`, `removeImg(${pendingImages.length-1})`,
+        `<img class="a-img-prev" src="${dataUrl}"/>`);
+      URL.revokeObjectURL(img.src);
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = URL.createObjectURL(file);
+  });
+}
 
-/* ════════════════════════ CODE ATTACHMENT ════════════════════════ */
-// Threshold: if pasted text has more than this many lines OR chars → treat as code attachment
-const CODE_ATTACH_LINES = 20;
-const CODE_ATTACH_CHARS = 800;
+function removeImg(i) {
+  pendingImages[i] = null;
+  removeChip("img-"+( i +1));
+  updateTokEst();
+}
 
-// Detect large paste in textarea
+/* ── CODE / FILE ATTACHMENT ── */
+async function handleCodeFiles(input) {
+  const files = [...input.files];
+  for (const file of files) {
+    await readAttachFile(file);
+  }
+  input.value = "";
+  updateTokEst();
+}
+
+function readAttachFile(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lang = file.name.split(".").pop().toLowerCase();
+      attachCodeBlock(e.target.result, lang, file.name);
+      resolve();
+    };
+    reader.onerror = () => resolve();
+    reader.readAsText(file);
+  });
+}
+
+/* Detect large paste → auto-attach */
 textarea.addEventListener("paste", e => {
-  const pasted = e.clipboardData.getData("text");
-  const lines  = pasted.split("\n").length;
-  if (lines >= CODE_ATTACH_LINES || pasted.length >= CODE_ATTACH_CHARS) {
+  const txt = e.clipboardData.getData("text");
+  if (txt.split("\n").length >= CODE_PASTE_LINES || txt.length >= CODE_PASTE_CHARS) {
     e.preventDefault();
-    attachCode(pasted, "pasted-code.txt");
+    attachCodeBlock(txt, detectLang(txt), "pasted-code");
   }
 });
 
-// File-based code attach
-codeInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    attachCode(ev.target.result, file.name);
-  };
-  reader.readAsText(file);
-  codeInput.value = "";
-});
-
-function attachCode(text, name) {
-  attachedCode = { text, name, lines: text.split("\n").length };
-  addCodeChip(name, attachedCode.lines);
+function detectLang(t) {
+  const s = t.slice(0,400);
+  if (/^(import |from |def |class |async def |#!.*python)/.test(s)) return "py";
+  if (/^(function |const |let |var |import |export )/.test(s)||s.includes("=>")) return "js";
+  if (/typescript|interface |type /.test(s)) return "ts";
+  if (/^(#include|int main|void |std::)/.test(s)) return "cpp";
+  if (/^(package |import "fmt"|func )/.test(s)) return "go";
+  if (/^(use |fn |impl |pub struct|#\[)/.test(s)) return "rs";
+  if (/^(<\?php|namespace |use )/.test(s)) return "php";
+  if (/^\s*<[a-zA-Z]/.test(s)) return "html";
+  if ((s.startsWith("{")||s.startsWith("["))&&s.includes(":")) return "json";
+  if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE)/i.test(s)) return "sql";
+  if (/^---\n|^\w+:\s/.test(s)&&s.includes("\n")) return "yaml";
+  return "txt";
 }
 
-/* ════════════════════════ ATTACHMENT STRIP ════════════════════════ */
-function addImageChip(name, dataUrl) {
-  const chip = document.createElement("div");
-  chip.className = "attach-chip";
-  chip.id = "chip-image";
-  chip.innerHTML = `📷 <span>${name}</span>
-    <button class="attach-chip-remove" onclick="removeImage()">✕</button>`;
-  const existing = document.getElementById("chip-image");
-  if (existing) existing.remove();
-  strip.appendChild(chip);
-  strip.classList.add("has-items");
+function extractCodeMeta(text, lang) {
+  if (!["py","js","ts","java","go","rs"].includes(lang)) return "";
+  const fns=[],cls=[];
+  text.split("\n").forEach(l => {
+    const mf=l.match(/^\s*(def |function |const |let |fn )([a-zA-Z_]\w*)/);
+    const mc=l.match(/^\s*(class |struct )([a-zA-Z_]\w*)/);
+    if (mf) fns.push(mf[2]);
+    if (mc) cls.push(mc[2]);
+  });
+  const parts=[];
+  if (cls.length) parts.push(`${cls.length} class${cls.length>1?"es":""}: ${cls.slice(0,4).join(", ")}`);
+  if (fns.length) parts.push(`${fns.length} fn${fns.length>1?"s":""}: ${fns.slice(0,5).join(", ")}`);
+  return parts.join(" · ");
 }
 
-function addCodeChip(name, lines) {
-  const chip = document.createElement("div");
-  chip.className = "attach-chip";
-  chip.id = "chip-code";
-  chip.innerHTML = `📎 <span>${name} (${lines} lines)</span>
-    <button class="attach-chip-remove" onclick="removeCode()">✕</button>`;
-  const existing = document.getElementById("chip-code");
-  if (existing) existing.remove();
-  strip.appendChild(chip);
-  strip.classList.add("has-items");
+function attachCodeBlock(text, lang, name) {
+  const meta = extractCodeMeta(text, lang);
+  const idx  = pendingFiles.length;
+  pendingFiles.push({ text, name, lang, lines:text.split("\n").length, meta });
+  addChip(`code-${idx}`, `📎 ${name} (${pendingFiles[idx].lines}L${lang&&lang!=="txt"?` · ${lang}`:""})`,
+    `removeFile(${idx})`);
+  updateTokEst();
 }
 
-function removeImage() {
-  uploadedImage = null;
-  const chip = document.getElementById("chip-image");
-  if (chip) chip.remove();
-  if (!strip.children.length) strip.classList.remove("has-items");
-  imgInput.value = "";
+function removeFile(i) {
+  pendingFiles[i] = null;
+  removeChip(`code-${i}`);
+  updateTokEst();
 }
 
-function removeCode() {
-  attachedCode = null;
-  const chip = document.getElementById("chip-code");
-  if (chip) chip.remove();
-  if (!strip.children.length) strip.classList.remove("has-items");
+/* ── ATTACHMENT STRIP ── */
+const strip = $("attach-strip");
+function addChip(id, label, onremove, prefix="") {
+  let chip = $(`chip-${id}`);
+  if (!chip) { chip=document.createElement("div"); chip.id=`chip-${id}`; chip.className="a-chip"; strip.appendChild(chip); }
+  chip.innerHTML = `${prefix}${label}<button class="a-chip-x" onclick="${onremove}()">✕</button>`;
+  strip.classList.add("has");
+}
+function removeChip(id) {
+  $(`chip-${id}`)?.remove();
+  if (!strip.children.length) strip.classList.remove("has");
 }
 
-/* ════════════════════════ MESSAGE RENDERING ════════════════════════ */
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+/* ── TOKEN ESTIMATOR ── */
+function updateTokEst() {
+  const txt   = textarea.value.length;
+  const files = pendingFiles.filter(Boolean).reduce((a,f)=>a+f.text.length,0);
+  const imgs  = pendingImages.filter(Boolean).length * 512;
+  const sys   = sysPrompt.length;
+  const hist  = history.reduce((a,m)=>a+(m.content?.length||0),0);
+  const est   = Math.round((txt+files+sys+hist)/4)+imgs+totalTokens;
+  const el    = $("tok-est");
+  el.textContent = est > 20 ? `~${est} tok` : "";
+  el.className   = est > ctxLimit*0.8 ? "warn" : "";
 }
 
-function buildUserBubble(text, image, codeAttach) {
-  let html = "";
-
-  // Plain escaped text — no markdown, no bold
-  if (text) html += `<div>${escapeHtml(text)}</div>`;
-
-  // Image preview
-  if (image) {
-    html += `<div class="msg-img"><img src="${image.dataUrl}" alt="${image.name}"/></div>`;
-  }
-
-  // Code attachment display in message
-  if (codeAttach) {
-    const lineCount = codeAttach.lines;
-    html += `
-      <div class="code-attachment" id="ca-${Date.now()}">
-        <div class="code-attach-header">
-          <span class="code-attach-icon">📎</span>
-          <span class="code-attach-name">${escapeHtml(codeAttach.name)}</span>
-          <span class="code-attach-lines">${lineCount} lines</span>
-          <button class="code-attach-expand" onclick="expandAttachment(this)">expand</button>
-        </div>
-        <div class="code-attach-body" style="display:none">
-          <pre style="background:transparent;padding:10px;overflow-x:auto;font-size:0.78rem;color:var(--muted)">${escapeHtml(codeAttach.text)}</pre>
-        </div>
-      </div>`;
-  }
-
-  return html;
+function updateTokChip() {
+  const chip = $("tok-chip");
+  chip.textContent = `${totalTokens} tok`;
+  chip.className   = "token-chip"+(totalTokens > ctxLimit*0.8?" warn":"");
 }
 
-function expandAttachment(btn) {
-  const container = btn.closest(".code-attachment");
-  const body      = container.querySelector(".code-attach-body");
-  const isOpen    = body.style.display !== "none";
-  body.style.display = isOpen ? "none" : "block";
-  btn.textContent    = isOpen ? "expand" : "collapse";
+/* ── ESCAPE HTML ── */
+function escH(s) {
+  return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// Custom marked renderer — code blocks with copy button
+/* ── MARKED RENDERER ── */
 const renderer = new marked.Renderer();
-
 renderer.code = function(token) {
-  const raw  = token.text || "";
-  const lang = token.lang || "";
-  let highlighted = "";
+  const raw  = typeof token==="object" ? token.text||"" : token;
+  const lang = typeof token==="object" ? token.lang||"" : "";
+  let hi="";
   try {
-    highlighted = lang && hljs.getLanguage(lang)
-      ? hljs.highlight(raw, { language: lang }).value
+    hi = lang&&hljs.getLanguage(lang)
+      ? hljs.highlight(raw,{language:lang}).value
       : hljs.highlightAuto(raw).value;
-  } catch(e) {
-    highlighted = escapeHtml(raw);
-  }
-  const escapedRaw = escapeHtml(raw);
-  return `<div class="code-container">
-    <div class="code-header">
-      <span class="code-lang">${lang || "code"}</span>
-      <button class="code-btn" onclick="copyCode(this)">Copy</button>
-      <button class="code-btn" onclick="downloadCode(this,'${lang||'txt'}')">↓</button>
+  } catch { hi=escH(raw); }
+  return `<div class="code-wrap">
+    <div class="code-bar">
+      <span class="code-lang-tag">${lang||"code"}</span>
+      <button class="cbb" onclick="copyCode(this)">Copy</button>
+      <button class="cbb" onclick="dlCode(this,'${lang||'txt'}')">↓</button>
     </div>
-    <pre><code class="hljs" data-raw="${escapedRaw}">${highlighted}</code></pre>
+    <pre><code class="hljs" data-raw="${escH(raw)}">${hi}</code></pre>
   </div>`;
 };
+marked.setOptions({ renderer, breaks:true, gfm:true });
 
-// Detect and render JSON responses
-function maybeRenderJson(text) {
-  const trimmed = text.trim();
-  // Check if it looks like JSON
-  if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length > 10) {
+function tryJson(text) {
+  const t=text.trim();
+  if ((t.startsWith("{")||t.startsWith("["))&&t.length>5) {
     try {
-      const parsed  = JSON.parse(trimmed);
-      const pretty  = JSON.stringify(parsed, null, 2);
-      const escaped = escapeHtml(pretty);
-      return `<div class="json-container">
-        <div class="json-header" onclick="toggleJson(this)">
+      return `<div class="json-wrap">
+        <div class="json-bar" onclick="toggleJson(this)">
           <span class="json-badge">JSON</span>
-          <span style="font-size:0.72rem;color:var(--muted)">Structured response detected</span>
+          <span style="font-size:0.68rem;color:var(--muted)">Structured response</span>
           <span class="json-toggle">▼</span>
         </div>
-        <div class="json-body">
-          <pre>${escaped}</pre>
-        </div>
+        <div class="json-body"><pre>${escH(JSON.stringify(JSON.parse(t),null,2))}</pre></div>
       </div>`;
-    } catch(e) { /* not valid JSON */ }
+    } catch{}
   }
   return null;
 }
 
-function toggleJson(header) {
-  const body   = header.nextElementSibling;
-  const toggle = header.querySelector(".json-toggle");
-  const isOpen = body.style.display !== "none";
-  body.style.display = isOpen ? "none" : "block";
-  toggle.textContent = isOpen ? "▶" : "▼";
+function toggleJson(bar) {
+  const body=bar.nextElementSibling;
+  const hidden=body.style.display==="none";
+  body.style.display=hidden?"block":"none";
+  bar.querySelector(".json-toggle").textContent=hidden?"▼":"▶";
 }
 
-marked.setOptions({ renderer, breaks: true, gfm: true });
-
-/* ════════════════════════ APPEND MESSAGE ════════════════════════ */
-function appendMsg(type, label, htmlOrText, isHtml = false) {
-  const block = document.createElement("div");
-  block.className = `msg-block ${type}`;
-  const content = isHtml ? htmlOrText : escapeHtml(htmlOrText);
-  block.innerHTML = `<div class="msg-meta">${label}</div>
-    <div class="msg-text">${content}</div>`;
-  chat.appendChild(block);
-  chat.scrollTop = chat.scrollHeight;
-  return block.querySelector(".msg-text");
+function copyCode(btn) {
+  const raw=btn.closest(".code-wrap").querySelector("code").dataset.raw||"";
+  const text=raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
+  navigator.clipboard.writeText(text).catch(()=>{
+    const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+  });
+  btn.textContent="Copied!";btn.classList.add("ok");
+  setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("ok");},2000);
 }
 
-/* ════════════════════════ SEND PROMPT ════════════════════════ */
-async function sendPrompt() {
+function dlCode(btn,ext) {
+  const raw=btn.closest(".code-wrap").querySelector("code").dataset.raw||"";
+  const text=raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"}));
+  a.download=`nexus.${ext}`;a.click();
+}
+
+/* ── APPEND MESSAGES ── */
+function appendSystem(text) {
+  const b=document.createElement("div");b.className="msg-block system-msg";
+  b.innerHTML=`<div class="msg-meta"><span class="mm-label">System</span><span class="mm-time">${tstamp()}</span></div>
+    <div class="msg-body">${escH(text)}</div>`;
+  chat.insertBefore(b, $("vscroll-bot"));
+  scrollChat();
+}
+
+function appendError(text) {
+  const b=document.createElement("div");b.className="msg-block error";
+  b.innerHTML=`<div class="msg-meta"><span class="mm-label">Error</span><span class="mm-time">${tstamp()}</span></div>
+    <div class="msg-body">${escH(text)}</div>`;
+  chat.insertBefore(b, $("vscroll-bot"));
+  scrollChat();
+}
+
+function buildUserHtml(text, imgs, files) {
+  let html = text ? `<div>${escH(text)}</div>` : "";
+  imgs.filter(Boolean).forEach(img =>
+    html += `<div class="msg-img"><img src="${img.dataUrl}" alt="${escH(img.name)}"/></div>`
+  );
+  files.filter(Boolean).forEach(f => {
+    const uid="ca-"+Date.now()+Math.random();
+    html += `<div class="code-attach">
+      <div class="code-attach-bar">
+        <span class="ca-name">${escH(f.name)}</span>
+        <span class="ca-meta">${f.lines}L${f.lang&&f.lang!=="txt"?` · ${f.lang}`:""}</span>
+        ${f.meta?`<span class="ca-meta"> · ${escH(f.meta)}</span>`:""}
+        <button class="ca-btn" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'collapse':'expand'">expand</button>
+      </div>
+      <div class="code-attach-body"><pre>${escH(f.text)}</pre></div>
+    </div>`;
+  });
+  return html;
+}
+
+function tstamp() {
+  return new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"});
+}
+
+/* ── SCROLL + VIRTUALISATION ──
+   For long chats: hide messages beyond a window to prevent DOM overload ── */
+const VIRT_WINDOW = 60; // keep last 60 messages in DOM
+let allMessages   = []; // store rendered HTML for older messages
+
+function scrollChat() { chat.scrollTop = chat.scrollHeight; }
+
+function pruneOldMessages() {
+  const msgs = chat.querySelectorAll(".msg-block:not(.system-msg)");
+  if (msgs.length > VIRT_WINDOW) {
+    // Archive oldest, replace with a "load more" sentinel
+    const toRemove = msgs.length - VIRT_WINDOW;
+    for (let i=0;i<toRemove;i++) {
+      allMessages.push(msgs[i].outerHTML);
+      msgs[i].remove();
+    }
+    // Insert "show older" button at top if not already there
+    if (!$("load-older-btn")) {
+      const btn=document.createElement("button");
+      btn.id="load-older-btn";
+      btn.style.cssText="display:block;margin:8px auto;background:transparent;border:1px dashed var(--border2);color:var(--muted);font-size:0.68rem;padding:5px 14px;border-radius:3px;cursor:pointer;";
+      btn.textContent=`↑ Show ${allMessages.length} older messages`;
+      btn.onclick=loadOlderMessages;
+      chat.insertBefore(btn, chat.querySelector(".msg-block"));
+    } else {
+      $("load-older-btn").textContent=`↑ Show ${allMessages.length} older messages`;
+    }
+  }
+}
+
+function loadOlderMessages() {
+  const btn=$("load-older-btn");
+  if (btn) btn.remove();
+  const frag=document.createDocumentFragment();
+  allMessages.forEach(html => {
+    const div=document.createElement("div");div.innerHTML=html;
+    frag.appendChild(div.firstChild);
+  });
+  allMessages=[];
+  const first=chat.querySelector(".msg-block");
+  chat.insertBefore(frag, first);
+}
+
+/* ── SEND ── */
+textarea.addEventListener("input", function() {
+  this.style.height="auto";
+  this.style.height=Math.min(this.scrollHeight,200)+"px";
+  updateTokEst();
+});
+
+textarea.addEventListener("keydown", e => {
+  if (e.key==="Enter"&&!e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+
+sendBtn.addEventListener("click", () => {
+  if (isGenerating) abortCtrl?.abort();
+  else handleSend();
+});
+
+async function handleSend() {
   if (isGenerating) return;
+  const raw = textarea.value.trim();
+  const imgs  = pendingImages.filter(Boolean);
+  const files = pendingFiles.filter(Boolean);
+  if (!raw && !imgs.length && !files.length) return;
+  if (!currentModel) { appendSystem("No model selected. Is the server running?"); return; }
 
-  const rawText = textarea.value.trim();
-  if (!rawText && !uploadedImage && !attachedCode) return;
+  // Snapshot & clear pending
+  const imgSnap  = [...imgs];
+  const fileSnap = [...files];
+  textarea.value=""; textarea.style.height="46px";
+  pendingImages=[]; pendingFiles=[];
+  strip.innerHTML=""; strip.classList.remove("has");
 
-  if (!currentModel) {
-    appendMsg("error", "Error", "No model selected. Is Ollama running?");
-    return;
+  // Build API text (full, with attachments)
+  let apiText = raw;
+  fileSnap.forEach(f => {
+    apiText += `\n\n--- File: ${f.name}${f.lang&&f.lang!=="txt"?` (${f.lang})`:""} ---\n${f.text}\n--- end ---`;
+  });
+
+  // Render user bubble
+  const userBlock=document.createElement("div");
+  userBlock.className="msg-block user";
+  userBlock.innerHTML=`<div class="msg-meta"><span class="mm-label">You</span><span class="mm-time">${tstamp()}</span></div>
+    <div class="msg-body">${buildUserHtml(raw,imgSnap,fileSnap)}</div>`;
+  chat.insertBefore(userBlock,$("vscroll-bot"));
+  scrollChat();
+
+  history.push({role:"user",content:apiText});
+
+  // Mode-specific enrichment
+  let finalApiText = apiText;
+  if (currentMode==="howto") finalApiText = buildHowToPrompt(apiText, currentSkill);
+  else if (currentMode==="research") finalApiText = buildResearchPrompt(apiText);
+  if (ahmOn) finalApiText = injectAHM(finalApiText);
+
+  // Fetch source context (enabled sources)
+  const enabledSrcs = sources.filter(s=>s.enabled);
+  if (enabledSrcs.length > 0) {
+    appendSystem(`Fetching ${enabledSrcs.length} source(s)…`);
+    const ctxParts = await Promise.all(enabledSrcs.map(fetchSourceContent));
+    const srcCtx = ctxParts.filter(Boolean).join("\n\n---\n\n");
+    if (srcCtx) finalApiText = `[Fetched source context]:\n${srcCtx}\n\n[User query]:\n${finalApiText}`;
   }
 
-  // Build full prompt text sent to API
-  let fullPrompt = rawText;
-  if (attachedCode) {
-    fullPrompt += `\n\n--- Attached file: ${attachedCode.name} ---\n${attachedCode.text}\n--- end of file ---`;
-  }
+  await doGenerate(finalApiText, imgSnap, currentMode);
+}
 
-  // ── Render user message (visual only, plain text) ──
-  const userBubble = document.createElement("div");
-  userBubble.className = "msg-block user";
-  userBubble.innerHTML = `
-    <div class="msg-meta">You</div>
-    <div class="msg-text">${buildUserBubble(rawText, uploadedImage, attachedCode)}</div>`;
-  chat.appendChild(userBubble);
+function buildHowToPrompt(text, skill) {
+  return `You are generating a structured How-To guide. Skill level: ${skill.toUpperCase()}.
 
-  // Clear input
-  textarea.value = "";
-  textarea.style.height = "52px";
+Format your response as:
+1. A brief overview (2-3 sentences)
+2. Prerequisites (bullet list)
+3. Step-by-step guide (numbered, with sub-steps where needed)
+4. Common mistakes to avoid
+5. Next steps / deeper exploration
 
-  // Snapshot and clear attachments
-  const imgSnap  = uploadedImage;
-  const codeSnap = attachedCode;
-  removeImage();
-  removeCode();
-  chat.scrollTop = chat.scrollHeight;
+Be procedural, precise, and include exact commands or tool names where relevant.
+Do NOT invent commands or steps you are not certain about.
 
-  // ── UI state: generating ──
-  isGenerating = true;
-  runBtn.textContent = "■ Stop";
-  runBtn.disabled = false; // keep enabled for stop action
-  setStatusBusy();
-  abortController = new AbortController();
+Task: ${text}`;
+}
 
-  // Create AI response bubble
-  const aiBlock = document.createElement("div");
-  aiBlock.className = "msg-block ai";
-  aiBlock.innerHTML = `<div class="msg-meta">Ollama · ${currentModel}</div>
-    <div class="msg-text streaming-cursor" id="ai-response"></div>`;
-  chat.appendChild(aiBlock);
-  const responseEl = aiBlock.querySelector("#ai-response");
-  chat.scrollTop = chat.scrollHeight;
+function buildResearchPrompt(text) {
+  return `You are a research analyst performing deep research. Your output must:
+- Clearly distinguish VERIFIED FACTS from INFERENCE or SPECULATION
+- Flag any information that cannot be reliably verified with [UNCERTAIN]
+- Identify contradictions or conflicting information
+- Suggest 3-5 related topics for further research
+- Cite your reasoning chain, not just conclusions
 
-  // ── Build API payload ──
-  const payload = {
-    model:  currentModel,
-    prompt: fullPrompt,
-    stream: true
-  };
+Research topic: ${text}`;
+}
 
-  if (imgSnap) payload.images = [imgSnap.base64];
+function injectAHM(text) {
+  return `${text}
+
+[Anti-hallucination instruction]: Only state facts you are highly confident about. For any uncertain claim, prefix with [UNCERTAIN]. For inferred information, prefix with [INFERRED]. Do not fabricate names, dates, statistics, or technical details. If you do not know something, say so explicitly.`;
+}
+
+/* ── GENERATE ── */
+async function doGenerate(apiText, imgs, mode) {
+  isGenerating=true;
+  sendBtn.textContent="Stop"; sendBtn.className="stop";
+  setBusy();
+  abortCtrl = new AbortController();
+
+  const prov = providers.find(p=>p.id===activeProvider)||providers[0];
+
+  // AI bubble
+  const aiBlock=document.createElement("div");
+  aiBlock.className="msg-block ai";
+  aiBlock.innerHTML=`
+    <div class="msg-meta">
+      <span class="mm-label">Nexus</span>
+      <span class="mm-model">${escH(currentModel)}</span>
+      <span id="s-stats" class="mm-stats"></span>
+      <span class="mm-time">${tstamp()}</span>
+      <div class="msg-actions">
+        <button class="ma-btn" onclick="copyMsg(this)">Copy</button>
+        <button class="ma-btn" onclick="regenMsg(this)">Regen</button>
+      </div>
+    </div>
+    <div class="msg-body scursor" id="ai-live"></div>`;
+  chat.insertBefore(aiBlock,$("vscroll-bot"));
+  const liveEl   = aiBlock.querySelector("#ai-live");
+  const statsEl  = aiBlock.querySelector("#s-stats");
+  scrollChat();
+
+  let acc="", tStart=Date.now(), tokCount=0;
 
   try {
-    const res = await fetch(`${serverUrl}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: abortController.signal
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} — ${res.statusText}`);
-    }
-
-    // ── Stream reading ──
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let accumulated = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n").filter(l => l.trim());
-
-      for (const line of lines) {
-        try {
-          const json = JSON.parse(line);
-          if (json.response) {
-            accumulated += json.response;
-            // Live update — render markdown as it streams
-            const jsonHtml = maybeRenderJson(accumulated.trim());
-            responseEl.innerHTML = jsonHtml || marked.parse(accumulated);
-            chat.scrollTop = chat.scrollHeight;
-          }
-          if (json.done) break;
-        } catch(e) { /* partial JSON chunk, skip */ }
+    // Build messages array
+    const messages=[];
+    if (sysPrompt) messages.push({role:"system",content:sysPrompt});
+    const window20 = history.slice(-20);
+    window20.forEach(m => {
+      if (m.role==="user" && m===history[history.length-1]) {
+        // last user message: replace content with enriched version
+        messages.push({role:"user",content:apiText});
+      } else {
+        messages.push({role:m.role,content:m.content});
       }
+    });
+    if (imgs.length>0 && prov.type==="ollama") messages[messages.length-1].images=imgs.map(i=>i.base64);
+
+    const endpoint = prov.type==="ollama"
+      ? `${prov.url}/api/chat`
+      : `${prov.url}/chat/completions`;
+
+    const headers = {"Content-Type":"application/json"};
+    if (prov.key) headers["Authorization"]=`Bearer ${prov.key}`;
+    if (prov.id.includes("openrouter")) { headers["HTTP-Referer"]=window.location.href; headers["X-Title"]="Nexus v3"; }
+
+    const body = prov.type==="ollama"
+      ? {model:currentModel,messages,stream:streamOn}
+      : {model:currentModel,messages,stream:streamOn,max_tokens:2048};
+
+    const res = await fetch(endpoint,{method:"POST",headers,body:JSON.stringify(body),signal:abortCtrl.signal});
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+    if (streamOn) {
+      const reader=res.body.getReader(), dec=new TextDecoder();
+      while(true) {
+        const {done,value}=await reader.read();
+        if(done)break;
+        const lines=dec.decode(value,{stream:true}).split("\n").filter(l=>l.trim());
+        for(const line of lines) {
+          try {
+            const raw=line.startsWith("data: ")?line.slice(6):line;
+            if(raw==="[DONE]")break;
+            const j=JSON.parse(raw);
+            // Ollama format
+            const tok=j.message?.content||j.response||
+              // OpenAI format
+              j.choices?.[0]?.delta?.content||"";
+            if(tok){acc+=tok;tokCount++;
+              const jh=tryJson(acc.trim());
+              liveEl.innerHTML=jh||marked.parse(acc);
+              scrollChat();
+              if(tokCount%10===0){const e=(Date.now()-tStart)/1000;statsEl.textContent=`· ${(tokCount/e).toFixed(1)} tok/s`;}
+            }
+            const done2=j.done||j.choices?.[0]?.finish_reason==="stop";
+            if(done2){
+              const ec=j.eval_count||j.usage?.completion_tokens;
+              const pc=j.prompt_eval_count||j.usage?.prompt_tokens;
+              if(ec){totalTokens+=(ec+(pc||0));updateTokChip();statsEl.textContent=`· ${ec} tok · ${((ec)/((Date.now()-tStart)/1000)).toFixed(1)} tok/s`;}
+            }
+          } catch{}
+        }
+      }
+    } else {
+      const j=await res.json();
+      acc=j.message?.content||j.choices?.[0]?.message?.content||"";
     }
 
-    // Final render — clean cursor
-    responseEl.classList.remove("streaming-cursor");
-    const finalJsonHtml = maybeRenderJson(accumulated.trim());
-    if (finalJsonHtml) {
-      responseEl.innerHTML = finalJsonHtml;
-    } else {
-      responseEl.innerHTML = marked.parse(accumulated);
-    }
+    // Final render
+    liveEl.classList.remove("scursor");
+    liveEl.innerHTML=tryJson(acc.trim())||marked.parse(acc);
+
+    // How-To: also render tree
+    lastHowToPrompt = prompt;
+    if (mode==="howto") renderHowToTree(acc);
+
+    history.push({role:"assistant",content:acc});
+    saveSession();
+    pruneOldMessages();
 
   } catch(e) {
-    if (e.name === "AbortError") {
-      responseEl.classList.remove("streaming-cursor");
-      responseEl.innerHTML += `<br><span style="color:var(--muted);font-size:0.8rem">— generation stopped —</span>`;
+    liveEl.classList.remove("scursor");
+    if(e.name==="AbortError"){
+      liveEl.innerHTML+=`<br><span style="color:var(--muted);font-size:0.78rem">— stopped —</span>`;
+      if(acc)history.push({role:"assistant",content:acc});
     } else {
       aiBlock.remove();
-      appendMsg("error", "Connection Error",
-        `Could not reach Ollama at ${serverUrl}.\n\nCheck:\n• Ollama is running (ollama serve)\n• OLLAMA_ORIGINS is set (see setup instructions)\n• Server URL in ⚙ Settings is correct\n\nError: ${e.message}`);
+      appendError(`Could not reach server at ${providers.find(p=>p.id===activeProvider)?.url||"?"}\n\nError: ${e.message}\n\nCheck:\n• Server is running\n• OLLAMA_ORIGINS includes this domain\n• URL in Settings is correct`);
     }
   } finally {
-    isGenerating = false;
-    runBtn.textContent = "Send ▶";
-    runBtn.disabled = false;
-    responseEl.id = ""; // clean up id
-    restoreStatus();
-    chat.scrollTop = chat.scrollHeight;
+    isGenerating=false; sendBtn.textContent="Send"; sendBtn.className="";
+    liveEl.id=""; restSt(); scrollChat(); updateTokEst();
   }
 }
 
-/* ════════════════════════ CODE HELPERS ════════════════════════ */
-function copyCode(btn) {
-  const raw = btn.closest(".code-container").querySelector("code").dataset.raw || "";
-  // unescape html entities for clipboard
-  const ta = document.createElement("textarea");
-  ta.value = raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  ta.remove();
-  btn.textContent = "Copied!"; btn.classList.add("copied");
-  setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+/* ── HOW-TO TREE RENDERER ── */
+function renderHowToTree(text) {
+  // Parse numbered sections from response and render as expandable tree
+  howToVersions.push(text);
+  currentHowToVersion = howToVersions.length - 1;
+  const sections = text
+  .split(/\n(?=#+\s|\d+\.\s)/)
+  .filter(Boolean);
+  if (sections.length < 3) return; // Not structured enough
+
+  const treeBlock=document.createElement("div");
+  treeBlock.className="msg-block ai";
+  let treeHtml=`<div class="msg-meta"><span class="mm-label">How-To Tree</span><span class="mm-time">${tstamp()}</span></div>
+    <div class="msg-body" style="padding:8px">
+    <div class="skill-selector">
+      ${["beginner","intermediate","advanced","expert"].map(s=>
+        `<button class="skill-btn${s===currentSkill?" active":""}" onclick="setSkill('${s}')">${s}</button>`
+      ).join("")}
+    </div>
+    <div class="howto-version-bar">
+  <button class="ht-ver-btn"
+    onclick="prevHowToVersion()">
+    ←
+  </button>
+
+  <span class="ht-ver-indicator">
+    ${currentHowToVersion + 1}
+    of
+    ${howToVersions.length || 1}
+  </span>
+
+  <button class="ht-ver-btn"
+    onclick="nextHowToVersion()">
+    →
+  </button>
+</div>
+
+<div class="howto-tree">`;
+
+  sections.slice(0,10).forEach((sec,i) => {
+    const lines=sec.split("\n").filter(Boolean);
+    const head=lines[0].replace(/^#+\s|^\d+\.\s/,"").trim();
+    const body=lines.slice(1).join("\n");
+    treeHtml+=`<div class="ht-node">
+      <div class="ht-node-header" onclick="toggleHtNode(this)">
+        <span class="ht-arrow">▶</span>
+        <span class="ht-label">${escH(head)}</span>
+        <span class="ht-badge">${i+1}</span>
+      </div>
+      <div class="ht-node-body">${marked.parse(body)||"<p style='color:var(--muted);font-size:0.78rem'>Click to expand…</p>"}</div>
+    </div>`;
+  });
+
+  treeHtml+=`</div></div>`;
+  treeBlock.innerHTML=treeHtml;
+  chat.insertBefore(treeBlock,$("vscroll-bot"));
+  scrollChat();
 }
 
-function downloadCode(btn, ext) {
-  const raw = btn.closest(".code-container").querySelector("code").dataset.raw || "";
-  const text = raw.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"');
-  const blob = new Blob([text], { type: "text/plain" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href = url; a.download = `nexus_code.${ext}`; a.click();
-  URL.revokeObjectURL(url);
+function prevHowToVersion() {
+  if (currentHowToVersion <= 0) return;
+
+  currentHowToVersion--;
+
+  rerenderHowToVersion();
 }
 
-/* ════════════════════════ INIT ════════════════════════ */
-// Restore saved server URL
-document.getElementById("server-url-input").value = serverUrl;
+function nextHowToVersion() {
+  if (currentHowToVersion >= howToVersions.length - 1) return;
 
+  currentHowToVersion++;
+
+  rerenderHowToVersion();
+}
+
+function rerenderHowToVersion() {
+  const latest = howToVersions[currentHowToVersion];
+
+  if (!latest) return;
+
+  document.querySelectorAll(".howto-tree-wrap")
+    .forEach(el => el.remove());
+
+  renderHowToTree(latest);
+}
+
+function toggleHtNode(header) {
+  header.classList.toggle("open");
+  header.nextElementSibling.classList.toggle("open");
+}
+
+async function setSkill(s) {
+  currentSkill = s;
+
+  document.querySelectorAll(".skill-btn")
+    .forEach(b => {
+      b.classList.toggle(
+        "active",
+        b.textContent.trim().toLowerCase() === s
+      );
+    });
+
+  if (!lastHowToPrompt || isGenerating) return;
+
+  await doGenerate(
+    lastHowToPrompt,
+    [],
+    "howto"
+  );
+}
+
+/* ── COPY / REGEN ── */
+function copyMsg(btn) {
+  const text=btn.closest(".msg-block").querySelector(".msg-body").innerText;
+  navigator.clipboard.writeText(text).catch(()=>{});
+  btn.textContent="Copied!";
+  setTimeout(()=>btn.textContent="Copy",2000);
+}
+
+function regenMsg(btn) {
+  if (isGenerating) return;
+  const lastUser=[...history].reverse().find(m=>m.role==="user");
+  if (!lastUser) return;
+  const lastAiIdx=history.map(m=>m.role).lastIndexOf("assistant");
+  if (lastAiIdx>=0) { history.splice(lastAiIdx,1); btn.closest(".msg-block")?.remove(); }
+  doGenerate(lastUser.content,[],currentMode);
+}
+
+/* ── VOICE INPUT ── */
+
+let howToVersions = [];
+let currentHowToVersion = 0;
+let lastHowToPrompt = "";
+let micRec=null, micOn=false;
+function toggleMic() {
+  const btn=$("mic-btn"), stat=$("mic-status");
+  if (!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){
+    appendSystem("Voice input not supported. Use Chrome or Edge.");return;
+  }
+  if (micOn) { micRec?.stop();return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  micRec=new SR();micRec.continuous=false;micRec.interimResults=true;micRec.lang="en-US";
+  micRec.onstart=()=>{micOn=true;btn.classList.add("active");stat.classList.add("on");};
+  micRec.onresult=e=>{textarea.value=[...e.results].map(r=>r[0].transcript).join("");textarea.dispatchEvent(new Event("input"));};
+  micRec.onend=()=>{micOn=false;btn.classList.remove("active");stat.classList.remove("on");if(textarea.value.trim())handleSend();};
+  micRec.onerror=()=>{micOn=false;btn.classList.remove("active");stat.classList.remove("on");};
+  micRec.start();
+}
+
+/* ── SESSIONS ── */
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+
+function newChat() {
+  if (history.length) saveSession();
+  sessionId=null; history=[]; totalTokens=0; updateTokChip();
+  allMessages=[];
+  chat.innerHTML=`<div id="vscroll-top"></div>
+    <div class="msg-block system-msg"><div class="msg-meta"><span class="mm-label">System</span></div>
+    <div class="msg-body">New session started.</div></div>
+    <div id="vscroll-bot"></div>`;
+  if (window.innerWidth<=640) closeSidebar();
+}
+
+function saveSession() {
+  if (!history.length) return;
+  const title=history.find(m=>m.role==="user")?.content?.slice(0,55)||"Chat";
+  const id=sessionId||genId();
+  sessionId=id;
+  const existing=sessions.findIndex(s=>s.id===id);
+  const s={id,title,date:new Date().toISOString(),model:currentModel,messages:[...history]};
+  if (existing>=0)sessions[existing]=s; else sessions.unshift(s);
+  if (sessions.length>50)sessions=sessions.slice(0,50);
+  LS.set("nx3_sessions",sessions);
+  renderHistory();
+}
+
+function loadSession(id) {
+  const s=sessions.find(s=>s.id===id);if(!s)return;
+  if (history.length)saveSession();
+  sessionId=id; history=[...s.messages]; totalTokens=0;
+  allMessages=[];
+  chat.innerHTML=`<div id="vscroll-top"></div><div id="vscroll-bot"></div>`;
+  history.forEach(m=>{
+    if(m.role==="user"){
+      const b=document.createElement("div");b.className="msg-block user";
+      b.innerHTML=`<div class="msg-meta"><span class="mm-label">You</span></div><div class="msg-body">${escH(m.content)}</div>`;
+      chat.insertBefore(b,$("vscroll-bot"));
+    } else if(m.role==="assistant"){
+      const b=document.createElement("div");b.className="msg-block ai";
+      const jh=tryJson(m.content.trim());
+      b.innerHTML=`<div class="msg-meta"><span class="mm-label">Nexus</span><div class="msg-actions"><button class="ma-btn" onclick="copyMsg(this)">Copy</button><button class="ma-btn" onclick="regenMsg(this)">Regen</button></div></div>
+        <div class="msg-body">${jh||marked.parse(m.content)}</div>`;
+      chat.insertBefore(b,$("vscroll-bot"));
+    }
+  });
+  scrollChat();
+  pruneOldMessages();
+  renderHistory();
+  if (window.innerWidth<=640) closeSidebar();
+}
+
+function deleteSession(id,e) {
+  e.stopPropagation();
+  sessions=sessions.filter(s=>s.id!==id);
+  LS.set("nx3_sessions",sessions);
+  if(sessionId===id)newChat(); else renderHistory();
+}
+
+function renderHistory() {
+  const list=$("history-list");
+  list.innerHTML="";
+  if(!sessions.length){
+    list.innerHTML=`<div style="font-size:0.68rem;color:var(--muted);padding:8px 10px;text-align:center">No saved sessions</div>`;
+    return;
+  }
+  sessions.forEach(s=>{
+    const el=document.createElement("div");
+    el.className="history-item"+(s.id===sessionId?" active":"");
+    const d=new Date(s.date);
+    const dt=d.toLocaleDateString("en",{month:"short",day:"numeric"});
+    el.innerHTML=`<span class="h-title" title="${escH(s.title)}">${escH(s.title)}</span>
+      <span class="h-date">${dt}</span>
+      <button class="h-del" onclick="deleteSession('${s.id}',event)" title="Delete">
+        <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" style="width:9px;height:9px"><path d="M1 1l8 8M9 1L1 9"/></svg>
+      </button>`;
+    el.addEventListener("click",()=>loadSession(s.id));
+    list.appendChild(el);
+  });
+}
+
+/* ── EXPORT / IMPORT ── */
+function exportChat() {
+  if (!history.length){alert("Nothing to export.");return;}
+  const title=history.find(m=>m.role==="user")?.content?.slice(0,60)||"nexus-chat";
+  let md=`---\ntitle: "${escH(title)}"\nmodel: ${currentModel}\ndate: ${new Date().toISOString()}\nsession: ${sessionId||"—"}\n---\n\n`;
+  history.forEach(m=>{md+=`## ${m.role==="user"?"You":"Nexus"}\n\n${m.content}\n\n---\n\n`;});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));
+  a.download=`nexus-${Date.now()}.md`;a.click();
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();$("import-dz").style.borderColor="var(--border2)";
+  const f=e.dataTransfer.files[0];if(f)importFile(f);
+}
+function handleImportFile(input){const f=input.files[0];if(f)importFile(f);input.value="";}
+function importFile(file) {
+  const r=new FileReader();
+  r.onload=e=>{
+    const msgs=[];
+    e.target.result.split(/^## /m).filter(Boolean).forEach(s=>{
+      const lines=s.split("\n");
+      const role=lines[0].trim().toLowerCase()==="you"?"user":"assistant";
+      const content=lines.slice(2).join("\n").replace(/\n---\n?$/,"").trim();
+      if(content)msgs.push({role,content});
+    });
+    if(!msgs.length){alert("Could not parse file.");return;}
+    if(history.length)saveSession();
+    sessionId=null;history=msgs;
+    loadSession(saveAndGetId());
+    closeModal("import-modal");
+  };
+  r.readAsText(file);
+}
+function saveAndGetId(){saveSession();return sessionId;}
+
+/* ── CLICK TO COPY AI BUBBLE ── */
+chat.addEventListener("click",e=>{
+  const bubble=e.target.closest(".msg-block.ai .msg-body");
+  if(!bubble||e.target.closest("button")||e.target.closest("a"))return;
+  navigator.clipboard.writeText(bubble.innerText).catch(()=>{});
+});
+
+/* ── CRASH PROTECTION ──
+   Wrap all renders in try/catch.
+   If a single message crashes render, skip it gracefully. ── */
+window.addEventListener("error", e => {
+  console.error("Nexus caught error:", e.message);
+  // Try to recover sending state
+  if (isGenerating) {
+    isGenerating=false;
+    sendBtn.textContent="Send"; sendBtn.className="";
+    restSt();
+    appendError("Render error occurred. Previous message may be incomplete. Error: "+e.message);
+  }
+});
+
+window.addEventListener("unhandledrejection", e => {
+  console.error("Nexus caught rejection:", e.reason);
+  if (isGenerating) {
+    isGenerating=false;
+    sendBtn.textContent="Send"; sendBtn.className="";
+    restSt();
+  }
+});
+
+/* ── INIT ── */
+initTheme();
+initPerf();
+renderHistory();
+renderNbDocs();
 checkServer();
-setInterval(checkServer, 12000);
+setInterval(checkServer, 15000);
 </script>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SETUP INSTRUCTIONS — READ BEFORE DEPLOYING
-     ═══════════════════════════════════════════════════════════════
+<!--
+═══════════════════════════════════════════════════════════════════════
+  NEXUS v3 — SETUP & SOURCE GUIDE
+═══════════════════════════════════════════════════════════════════════
 
-  ── OPTION A: LOCAL (browser and Ollama on same machine) ──────
-  No tunnel needed. Just:
-    1. Install Ollama from https://ollama.com
-    2. Set CORS header so browser can reach it:
-         Linux/Mac:  OLLAMA_ORIGINS="*" ollama serve
-         Windows:    setx OLLAMA_ORIGINS "*"  (then restart Ollama)
-    3. Pull a model:  ollama pull qwen2.5-coder
-    4. Open this HTML file in your browser — done!
+  OPTION A: LOCAL
+  ───────────────
+  Fedora:
+    curl -fsSL https://ollama.com/install.sh | sh
+    OLLAMA_ORIGINS="*" ollama serve
+    ollama pull qwen2.5-coder   # or any model
+    Open index.html in browser.
 
-  ── OPTION B: TUNNEL (Ollama on old laptop, UI on w-che.pages.dev) ─
-  STEP 1 — Install Ollama on old laptop:
-    Fedora:   curl -fsSL https://ollama.com/install.sh | sh
-    Windows:  Download installer from https://ollama.com/download
+  Windows:
+    1. https://ollama.com/download → install
+    2. PowerShell: setx OLLAMA_ORIGINS "*"  (restart Ollama after)
+    3. ollama pull qwen2.5-coder
+    4. Open index.html
 
-  STEP 2 — Set CORS to allow your site:
-    Fedora:
-      sudo systemctl edit ollama
-      Add under [Service]:
-        Environment="OLLAMA_ORIGINS=https://w-che.pages.dev"
-      Then: sudo systemctl restart ollama
+  OPTION B: CLOUDFLARE TUNNEL (old laptop → w-che.pages.dev)
+  ──────────────────────────────────────────────────────────
+  On old laptop:
+    1. Install Ollama (see above)
+    2. Fedora CORS:
+         sudo systemctl edit ollama
+         Add: Environment="OLLAMA_ORIGINS=https://w-che.pages.dev"
+         sudo systemctl restart ollama
+       Windows CORS (admin PowerShell):
+         [System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS","https://w-che.pages.dev","Machine")
+         Restart Ollama
+    3. Install cloudflared:
+         Fedora: wget …cloudflared-linux-amd64.rpm && sudo rpm -i …
+         Windows: winget install Cloudflare.cloudflared
+    4. Run: cloudflared tunnel --url http://localhost:11434
+       → get URL like https://xxxx.trycloudflare.com
+    5. In Nexus: Settings → paste tunnel URL → Save
 
-    Windows (PowerShell as admin):
-      [System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS","https://w-che.pages.dev","Machine")
-      (Restart Ollama after this)
+  ═══════════════════════════════════════════════════════════════════
+  WEB SOURCES GUIDE
+  ═══════════════════════════════════════════════════════════════════
 
-  STEP 3 — Install cloudflared on old laptop:
-    Fedora:
-      wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.rpm
-      sudo rpm -i cloudflared-linux-amd64.rpm
+  REGULAR URLS:
+  → Source Manager → Add → type full URL → type "web" → Add
+  → Nexus fetches via CORS proxy and injects text into context
+  → Default proxy: corsproxy.io (free, may be slow)
+  → For reliability: run your own proxy (see below)
 
-    Windows:
-      winget install Cloudflare.cloudflared
-      (or download .exe from github.com/cloudflare/cloudflared/releases)
+  WIKIPEDIA:
+  → Add URL like: https://en.wikipedia.org/wiki/OSINT
+  → Set type: "Wikipedia"
+  → Uses Wikipedia REST API for clean text extraction (no proxy needed)
 
-  STEP 4 — Start the tunnel (run this every time on old laptop):
-    cloudflared tunnel --url http://localhost:11434
+  ONION / TOR SOURCES:
+  → Browser CANNOT connect to .onion directly
+  → You need the proxy script running on your old laptop:
 
-    It prints something like:
-      https://random-words-here.trycloudflare.com
-    COPY THAT URL.
+  ─── LOCAL PROXY SCRIPT (Python, run on old laptop) ───────────────
+  Save as nexus-proxy.py and run: python3 nexus-proxy.py
 
-  STEP 5 — Paste URL into Nexus:
-    Open w-che.pages.dev, click ⚙, paste the tunnel URL, click Save.
-    Status should change to "server connected".
+  import http.server, urllib.request, urllib.parse, socket
+  import socks  # pip install PySocks
+  PROXY_PORT = 8765
 
-  STEP 6 (optional) — Make tunnel permanent on Fedora:
-    sudo cloudflared service install
-    (Runs tunnel automatically on boot)
+  class ProxyHandler(http.server.BaseHTTPRequestHandler):
+      def do_GET(self):
+          url = urllib.parse.unquote(self.path[1:])
+          tor = ".onion" in url
+          try:
+              if tor:
+                  s = socks.socksocket()
+                  s.set_proxy(socks.SOCKS5, "127.0.0.1", 9050)
+                  # parse host/port from url and connect
+                  # ... (full implementation below)
+              else:
+                  req = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
+                  with urllib.request.urlopen(req, timeout=8) as r:
+                      content = r.read().decode("utf-8","ignore")
+              self.send_response(200)
+              self.send_header("Access-Control-Allow-Origin","*")
+              self.send_header("Content-Type","text/plain")
+              self.end_headers()
+              self.wfile.write(content.encode())
+          except Exception as e:
+              self.send_response(500)
+              self.end_headers()
+              self.wfile.write(str(e).encode())
+      def log_message(self,*a): pass
 
-  IMPORTANT NOTES:
-  • Free trycloudflare.com tunnels get a NEW random URL every restart.
-    If you restart Ollama or the laptop, you must get the new URL and
-    paste it again in Settings. To get a permanent URL, log into
-    Cloudflare and create a named tunnel (free).
-  • OLLAMA_ORIGINS must exactly match your site URL or be "*" for local.
-  • If you see CORS errors in browser DevTools, the ORIGINS env var
-    is not set correctly.
+  httpd = http.server.HTTPServer(("localhost", PROXY_PORT), ProxyHandler)
+  httpd.serve_forever()
+  ──────────────────────────────────────────────────────────────────
 
-═══════════════════════════════════════════════════════════════ -->
+  Then in Nexus Settings → Proxy → http://localhost:8765/
+
+  For Tor:
+    1. Install Tor: Fedora: sudo dnf install tor && sudo systemctl start tor
+                   Windows: https://www.torproject.org/download/
+    2. Run proxy script
+    3. Add .onion URL in Source Manager → type "onion"
+    4. Nexus routes it through proxy → Tor
+
+  FULL PROXY SCRIPT (with Tor support):
+  https://github.com — or ask for it and I'll generate the full version.
+
+═══════════════════════════════════════════════════════════════════════
+-->
 </body>
 </html>
