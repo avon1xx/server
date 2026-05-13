@@ -3,10 +3,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // Assign DOM globals
   chatEl = document.getElementById("chat");
   textarea = document.getElementById("prompt-input");
+  if (textarea) {
+  textarea.addEventListener("paste", e => {
+    const txt = e.clipboardData.getData("text");
+    if (txt.split("\n").length >= CODE_PASTE_LINES || txt.length >= CODE_PASTE_CHARS) {
+      e.preventDefault();
+      attachCodeBlock(txt, detectLang(txt), "pasted-code");
+    }
+  });
+}
   sendBtn = document.getElementById("send-btn");
   modelSel = document.getElementById("model-sel");
   sdot = document.getElementById("sdot");
   statusTxt = document.getElementById("status-txt");
+  strip = document.getElementById("attach-strip");
+
 
   // Ensure functions are globally accessible for inline handlers
   window.closeModal = closeModal;
@@ -159,12 +170,7 @@ dropZone.addEventListener("drop", async e => {
       textarea.style.height = "auto";
       textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
     }
-  }
-  if (textarea) {
-    textarea.addEventListener("input", () => {
-      autoResize();
-      updateTokEst();
-    });
+  
   }
 
   // Send button / Enter

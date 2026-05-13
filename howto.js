@@ -1,13 +1,5 @@
 /* ── HOW-TO TREE RENDERER ── */
 // Plain renderer — no custom code-wrap, no syntax highlight inside tree nodes
-const plainRenderer = new marked.Renderer();
-marked.setOptions({ renderer: plainRenderer, breaks: true, gfm: true });
-const plainParse = t => {
-  const r = new marked.Renderer();
-  return marked.parse(t, { renderer: r, breaks: true, gfm: true });
-};
-// Restore full renderer after plain parse
-marked.setOptions({ renderer, breaks: true, gfm: true });
 
 let lastHowToText = "";      // raw AI text of last how-to response
 let lastHowToBlock = null;   // the DOM element of the tree block
@@ -70,11 +62,6 @@ function renderHowToTree(text, targetBlock) {
   scrollChat();
 }
 
-function toggleHtNode(header) {
-  header.classList.toggle("open");
-  header.nextElementSibling.classList.toggle("open");
-}
-
 function setSkill(s) {
   currentSkill = s;
   document.querySelectorAll(".skill-btn").forEach(b => b.classList.toggle("active", b.textContent === s));
@@ -131,13 +118,4 @@ function rerenderHowToVersion() {
   if (!latest) return;
   document.querySelectorAll(".howto-tree-wrap").forEach(el => el.remove());
   renderHowToTree(latest);
-}
-
-async function setSkill(s) {
-  currentSkill = s;
-  document.querySelectorAll(".skill-btn").forEach(b => {
-    b.classList.toggle("active", b.textContent.trim().toLowerCase() === s);
-  });
-  if (!lastHowToPrompt || isGenerating) return;
-  await doGenerate(lastHowToPrompt, [], "howto");
 }

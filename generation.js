@@ -35,7 +35,7 @@ function injectAHM(text) {
 /* ── GENERATE INTO EXISTING BLOCK (for in-place How-To regeneration) ── */
 async function doGenerateInto(apiText, imgs, targetBlock) {
   isGenerating = true;
-  sendBtn.textContent = "Stop"; sendBtn.className = "stop";
+  document.getElementById("send-btn").textContent = "Stop"; document.getElementById("send-btn").className = "stop";
   setBusy();
   abortCtrl = new AbortController();
   clearReasoning();
@@ -87,7 +87,7 @@ async function doGenerateInto(apiText, imgs, targetBlock) {
     }
   } finally {
     isGenerating = false;
-    sendBtn.textContent = "Send"; sendBtn.className = "";
+    document.getElementById("send-btn").textContent = "Send"; document.getElementById("send-btn").className = "";
     restSt();
   }
 }

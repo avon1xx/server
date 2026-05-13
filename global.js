@@ -1,3 +1,8 @@
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
 function $(id) { return document.getElementById(id); }
 
 // ── GLOBAL VARIABLES & LOCALSTORAGE HELPERS ──
@@ -120,11 +125,6 @@ const DEFAULT_SOURCES = [
 
 const THEMES       = ["dark","light","amoled","lowblue","volt","forest","rose","slate","paper"];
 const THEME_LABELS = ["Dark","Light","AMOLED","Low-Blue","Volt","Forest","Rose","Slate","Paper"];
-
-const LS = {
-  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
-};
 
 // State variables
 let providers      = LS.get("nx3_providers")  || DEFAULT_PROVIDERS;

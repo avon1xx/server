@@ -1,5 +1,5 @@
 // ── ATTACHMENTS, TOKEN ESTIMATION, STRIP MANAGEMENT ──
-const strip = document.getElementById("attach-strip");
+let strip; // initialized in events.js DOMContentLoaded
 
 function addChip(id, label, onremove, prefix="") {
   let chip = document.getElementById(`chip-${id}`);
