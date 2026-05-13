@@ -1,3 +1,5 @@
+function $(id) { return document.getElementById(id); }
+
 // ── GLOBAL VARIABLES & LOCALSTORAGE HELPERS ──
 const VISION_PATTERNS = ["llava","qwen-vl","qwen2-vl","bakllava","moondream","minicpm-v","cogvlm","internvl","pixtral","llama3.2-vision","gemma3","llava-phi","llama-3.2-11b","llama-3.2-90b"];
 const CODE_PASTE_LINES = 18, CODE_PASTE_CHARS = 700;

@@ -63,7 +63,8 @@ function renderHowToTree(text, targetBlock) {
   treeBlock.innerHTML = treeHtml;
 
   if (!isUpdate) {
-    chat.insertBefore(treeBlock, $("vscroll-bot"));
+    const chatContainer = document.getElementById("chat");  
+  if (chatContainer) chatContainer.insertBefore(treeBlock, $("vscroll-bot"));
     lastHowToBlock = treeBlock;
   }
   scrollChat();
